@@ -30,7 +30,7 @@
     "react-router-dom": "^6.20.1",
     "uuid": "^9.0.1",
     "web-vitals": "^3.5.0",
-    "zod": "^3.22.4",
+    "zod": "^4.1.8",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
