@@ -1,0 +1,27 @@
+name: "CodeQL Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+  - uses: security-experimental
+
+paths-ignore:
+  - node_modules
+  - dist
+  - coverage
+  - .github
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*.config.*"
+
+paths:
+  - src/
+  - public/
+
+# JavaScript/TypeScript specific configuration
+language: javascript
+extractor: javascript
+
+# Disable telemetry
+telemetry: false

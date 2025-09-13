@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Traffic Tacos - 티켓 예매 플랫폼" />
+
+    <!-- CSP 헤더 템플릿 -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      connect-src 'self' https://tickets.example.com;
+      img-src 'self' data: https:;
+      style-src 'self' 'unsafe-inline';
+      script-src 'self';
+      font-src 'self' https:;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    ">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Traffic Tacos - 티켓 예매" />
+    <meta property="og:description" content="빠르고 안정적인 티켓 예매 서비스" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+
+    <title>Traffic Tacos - 티켓 예매</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

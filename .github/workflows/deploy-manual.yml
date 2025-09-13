@@ -1,0 +1,84 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version tag (optional)'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build for production
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Create deployment package
+        run: |
+          tar -czf deploy-${{ github.sha }}.tar.gz dist/
+          echo "Package created: deploy-${{ github.sha }}.tar.gz"
+
+      # 🚨 실제 S3 배포는 아래 주석을 해제하세요
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ secrets.AWS_REGION }}
+
+      # - name: Deploy to S3 (Staging)
+      #   if: inputs.environment == 'staging'
+      #   run: |
+      #     aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_STAGING }} --delete
+
+      # - name: Deploy to S3 (Production)
+      #   if: inputs.environment == 'production'
+      #   run: |
+      #     aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_PRODUCTION }} --delete
+      #     aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Manual Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ inputs.version || 'latest' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Bundle size: $(du -sh dist/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Files: $(find dist/ -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️  Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. S3 버킷 생성 및 권한 설정" >> $GITHUB_STEP_SUMMARY
+          echo "2. CloudFront 배포판 설정" >> $GITHUB_STEP_SUMMARY
+          echo "3. GitHub Secrets 설정 (AWS credentials)" >> $GITHUB_STEP_SUMMARY
+          echo "4. 위의 주석처리된 배포 스텝 활성화" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,138 @@
+name: Release & Deploy
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run full test suite
+        run: npm run test:ci
+
+      - name: Build for production
+        run: npm run build
+
+      - name: Get version from tag
+        id: release
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Release version: $VERSION"
+
+      - name: Create release archive
+        run: |
+          VERSION=${{ steps.release.outputs.version }}
+          tar -czf traffic-tacos-web-$VERSION.tar.gz -C dist .
+          echo "Created: traffic-tacos-web-$VERSION.tar.gz"
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            traffic-tacos-web-*.tar.gz
+            dist/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            git log --oneline --pretty=format:"%h %s" $PREVIOUS_TAG..HEAD >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.release.outputs.version }}
+          release_name: Release ${{ steps.release.outputs.version }}
+          body: |
+            ## 🚀 Traffic Tacos Web ${{ steps.release.outputs.version }}
+
+            ### 📝 변경사항
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### 📦 다운로드
+            - 빌드 아티팩트: [traffic-tacos-web-${{ steps.release.outputs.version }}.tar.gz](https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.version }}/traffic-tacos-web-${{ steps.release.outputs.version }}.tar.gz)
+
+            ### 🚀 배포 상태
+            - ✅ 빌드 완료
+            - ✅ 테스트 통과
+            - ⚠️  S3 배포 준비됨 (수동 활성화 필요)
+          draft: false
+          prerelease: false
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: ./dist
+
+      # 🚨 실제 S3 배포는 아래 주석을 해제하세요
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ secrets.AWS_REGION }}
+
+      # - name: Deploy to production S3
+      #   run: |
+      #     aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_PRODUCTION }} --delete --cache-control max-age=31536000,public
+      #     aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_PRODUCTION }}/index.html --metadata-directive REPLACE --cache-control max-age=0,no-cache,no-store,must-revalidate --content-type text/html
+
+      # - name: Invalidate CloudFront cache
+      #   run: |
+      #     aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+      - name: Deployment notification
+        run: |
+          echo "## 🎯 Production Deployment Ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ 완료된 작업" >> $GITHUB_STEP_SUMMARY
+          echo "- 빌드 및 테스트 통과" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub Release 생성됨" >> $GITHUB_STEP_SUMMARY
+          echo "- 배포 아티팩트 준비됨" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 다음 단계" >> $GITHUB_STEP_SUMMARY
+          echo "1. AWS S3 버킷 생성" >> $GITHUB_STEP_SUMMARY
+          echo "2. CloudFront 배포판 설정" >> $GITHUB_STEP_SUMMARY
+          echo "3. GitHub Secrets에 AWS 자격 증명 추가" >> $GITHUB_STEP_SUMMARY
+          echo "4. 위의 배포 스텝 주석 해제" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 배포 정보" >> $GITHUB_STEP_SUMMARY
+          echo "- 버전: ${{ needs.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 커밋: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 배포 시간: $(date)" >> $GITHUB_STEP_SUMMARY

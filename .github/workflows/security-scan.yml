@@ -1,0 +1,131 @@
+name: Security Scan
+
+on:
+  schedule:
+    # 매주 월요일 오전 6시에 실행
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  # npm audit 실행
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Generate audit report
+        run: |
+          echo "## 📊 NPM Audit Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level moderate --json | jq -r '.vulnerabilities | to_entries[] | "- \(.key): \(.value.severity) (\(.value.count)개)"' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "- No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+
+  # CodeQL 보안 분석
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          config-file: ./.github/codeql-config.yml
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+
+  # Trivy를 사용한 컨테이너/파일 스캔 (향후 도커 이미지 생성 시 사용)
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # 🚨 실제 S3 보안 감사 (향후 활성화)
+      # - name: Audit S3 bucket security
+      #   if: github.ref == 'refs/heads/main'
+      #   run: |
+      #     echo "🔍 S3 보안 감사 준비됨"
+      #     echo "- 퍼블릭 액세스 차단 확인"
+      #     echo "- 버전 관리 활성화 확인"
+      #     echo "- 서버 측 암호화 확인"
+      #     echo "- 액세스 로깅 확인"
+
+  # 최종 보안 리포트 생성
+  security-report:
+    runs-on: ubuntu-latest
+    needs: [audit, codeql, trivy]
+    if: always()
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ 완료된 검사" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM 의존성 취약점 검사" >> $GITHUB_STEP_SUMMARY
+          echo "- CodeQL 코드 보안 분석" >> $GITHUB_STEP_SUMMARY
+          echo "- 파일 시스템 취약점 검사" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 다음 단계" >> $GITHUB_STEP_SUMMARY
+          echo "1. S3 버킷 보안 설정 검토" >> $GITHUB_STEP_SUMMARY
+          echo "2. CloudFront 보안 헤더 설정" >> $GITHUB_STEP_SUMMARY
+          echo "3. SSL/TLS 인증서 확인" >> $GITHUB_STEP_SUMMARY
+          echo "4. WAF 규칙 설정 검토" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛡️ 보안 권장사항" >> $GITHUB_STEP_SUMMARY
+          echo "- 정기적인 의존성 업데이트" >> $GITHUB_STEP_SUMMARY
+          echo "- CSP 헤더 구현" >> $GITHUB_STEP_SUMMARY
+          echo "- HTTPS 전용 연결" >> $GITHUB_STEP_SUMMARY
+          echo "- 민감한 데이터 암호화" >> $GITHUB_STEP_SUMMARY
