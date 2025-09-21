@@ -17,8 +17,8 @@ permissions:
 
 env:
   AWS_REGION: ap-southeast-2
-  AWS_ACCOUNT_ID: "137406935518"                                                     # ECR 변경되면 자동화 필요
-  ECR_REGISTRY: "137406935518.dkr.ecr.ap-southeast-2.amazonaws.com"                  # ECR 변경되면 자동화 필요
+  AWS_ACCOUNT_ID: ${{ !secrets.AWS_ACCOUNT_ID }}          # ECR 변경되면 자동화 필요
+  ECR_REGISTRY: ${{ !secrets.ECR_REGISTRY }}              # ECR 변경되면 자동화 필요
   ECR_REPOSITORY: "traffic-tacos/traffic-tacos-app"
   IMAGE_NAME: "traffic-tacos/traffic-tacos-app"
 
