@@ -1,5 +1,5 @@
 import { apiClient, postWithIdempotency } from './client'
-import { getApiMode, getApiBaseUrl, getApiPrefix } from '@/utils/config'
+import { getApiMode } from '@/utils/config'
 import { mockApiDelay, mockRandomSuccess, mockErrors } from '@/data/mockData'
 
 // 타입 정의
