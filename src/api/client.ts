@@ -32,10 +32,12 @@ export function generateIdempotencyKey(): string {
 
 // 동적으로 API 클라이언트 생성 함수
 function createApiClient() {
-  const baseUrl = getApiBaseUrl()
+  const baseUrl = getApiBaseUrl();
+  console.log('🔧 createApiClient - baseUrl:', baseUrl, 'API_MODE:', getConfig().API_MODE)
 
   // Mock 모드의 경우 ky 인스턴스 없이 직접 처리
   if (!baseUrl) {
+    console.log('⚠️ createApiClient - baseUrl is empty, returning null')
     return null
   }
 
@@ -117,9 +119,18 @@ export const apiClient = {
   },
 
   post: <T = any>(url: string, data?: any, options?: RequestInit) => {
+    console.log('📡 apiClient.post called - url:', url, 'data:', data)
     const api = getApi()
-    if (!api) throw new Error('API client not available in mock mode')
-    return api.post(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+    console.log('📡 apiClient.post - api instance:', api ? 'created' : 'null')
+    if (!api) {
+      console.error('❌ API client not available - api instance is null')
+      throw new Error('API client not available in mock mode')
+    }
+    console.log('📡 Making POST request to:', url)
+    return api.post(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => {
+      console.log('✅ POST response received:', res)
+      return res.data
+    })
   },
 
   put: <T = any>(url: string, data?: any, options?: RequestInit) => {

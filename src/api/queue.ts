@@ -57,7 +57,7 @@ export const queueApi = {
     console.log('🌐 Using API mode for queue join - calling real API')
     try {
       const response = await postWithIdempotency<QueueJoinResponse>(
-        '/api/v1/queue/join',
+        'api/v1/queue/join',
         data
       )
       console.log('✅ Queue join API success:', response)
@@ -112,7 +112,7 @@ export const queueApi = {
     // Local/Production 모드 - 실제 API 호출
     try {
       const response = await apiClient.get<QueueStatusResponse>(
-        `/api/v1/queue/status?token=${encodeURIComponent(token)}`
+        `api/v1/queue/status?token=${encodeURIComponent(token)}`
       )
       return response
     } catch (error) {
@@ -149,7 +149,7 @@ export const queueApi = {
     // Local/Production 모드 - 실제 API 호출
     try {
       const response = await postWithIdempotency<QueueEnterResponse>(
-        '/api/v1/queue/enter',
+        'api/v1/queue/enter',
         data
       )
       return response
