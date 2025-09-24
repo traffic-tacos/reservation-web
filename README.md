@@ -11,6 +11,7 @@ Vite + TypeScript + Tailwind CSS로 구축되었으며, 대규모 트래픽 상�
 - **캐주얼 디자인**: 밝고 여유로운 UI로 사용자 친화적인 경험 제공
 - **성능 최적화**: 코드 스플리팅과 lazy loading 적용
 - **접근성**: WCAG 가이드라인 준수
+- **CI/CD 자동화**: GitHub Actions를 통한 S3/CloudFront 배포 자동화
 
 ## 🛠️ 기술 스택
 
@@ -30,13 +31,14 @@ Vite + TypeScript + Tailwind CSS로 구축되었으며, 대규모 트래픽 상�
 - **Vitest** - 단위 테스트
 - **Playwright** - E2E 테스트
 - **ESLint** - 코드 품질 검사
+- **GitHub Actions** - CI/CD 자동화
 
 ## 📁 프로젝트 구조
 
 ```
 src/
 ├── api/                 # API 클라이언트 및 서비스
-│   ├── client.ts       # HTTP 클라이언트 설정
+│   ├── client.ts       # HTTP 클라이언트 설정 (CORS 수정, 타입 안전성 강화)
 │   ├── queue.ts        # 대기열 API
 │   ├── reservation.ts  # 예약 API
 │   └── payment.ts      # 결제 API
@@ -63,9 +65,22 @@ src/
 │   └── config.ts      # 설정 관리
 ├── observability/     # 관측성 관련
 └── i18n/             # 국제화
+
+.github/
+└── workflows/         # GitHub Actions 워크플로우
+    ├── deploy-s3-cdn.yml    # 자동 S3/CDN 배포
+    ├── deploy-manual.yml    # 수동 배포
+    ├── security-scan.yml    # 보안 스캔
+    └── release.yml          # 릴리즈 관리
+
+scripts/
+└── deploy-test.sh     # 로컬 배포 테스트 스크립트
+
 public/
 ├── config.json       # 런타임 설정
 └── index.html        # HTML 템플릿
+
+DEPLOYMENT.md         # 배포 가이드 및 설정 문서
 ```
 
 ## 🚀 시작하기
@@ -84,11 +99,29 @@ npm install
 # 개발 서버 실행
 npm run dev
 
+# 로컬 서버 실행 (외부 접근 가능)
+npm run local
+
 # 프로덕션 빌드
 npm run build
 
+# CI용 빌드 (최적화)
+npm run build:ci
+
 # 미리보기
 npm run preview
+
+# 린트 및 타입 체크
+npm run lint
+npm run type-check
+
+# 테스트 실행
+npm run test            # 단위 테스트 (watch 모드)
+npm run test:ci         # CI용 테스트 + 커버리지
+npm run test:e2e        # E2E 테스트
+
+# 전체 CI 체크 (로컬)
+npm run ci:check
 ```
 
 ### 환경 설정
@@ -225,22 +258,41 @@ npm run test:coverage
 
 ## 🚀 배포
 
-### CloudFront + S3
+### CI/CD 자동 배포
 
+이 프로젝트는 GitHub Actions를 통한 자동 배포 시스템을 구축하고 있습니다.
+
+#### 자동 배포
+- **트리거**: `main` 브랜치에 push 시
+- **대상**: S3 + CloudFront CDN
+- **과정**: 린트 → 타입체크 → 테스트 → 빌드 → 배포 → 캐시 무효화
+
+#### 수동 배포
+- **GitHub Actions UI**에서 "Manual Deploy" 워크플로우 실행
+- **환경 선택**: staging 또는 production
+- **배포 URL**: https://d2lvyoth1pev4s.cloudfront.net
+
+#### 로컬 테스트 배포
 ```bash
-# 프로덕션 빌드
-npm run build
-
-# 빌드된 파일들을 S3에 업로드
-aws s3 sync dist/ s3://your-bucket-name --delete
-
-# CloudFront 캐시 무효화 (필요시)
-aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
+# 배포 전 테스트 (AWS CLI 필요)
+./scripts/deploy-test.sh
 ```
 
-### 환경별 설정
+### AWS 인프라
 
-환경에 따라 `config.json`을 다르게 배포하여 API 엔드포인트 등을 변경할 수 있습니다.
+- **S3 버킷**: `traffictacos.store-static-website`
+- **CloudFront 배포**: `E2J89BTI216W6U`
+- **리전**: `ap-northeast-2` (Seoul)
+
+### 배포 설정
+
+자세한 배포 설정은 [`DEPLOYMENT.md`](./DEPLOYMENT.md) 파일을 참고하세요.
+
+#### 필요한 GitHub Secrets
+```
+AWS_ACCESS_KEY_ID      # AWS 액세스 키 ID
+AWS_SECRET_ACCESS_KEY  # AWS 시크릿 액세스 키
+```
 
 ## 🤝 기여하기
 
