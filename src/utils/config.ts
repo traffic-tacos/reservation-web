@@ -157,7 +157,7 @@ export function getApiBaseUrl(): string {
     case 'mock':
       return '' // Mock API는 URL이 필요 없음
     case 'local':
-      return 'http://localhost:8010' // reservation-api 로컬 서버
+      return 'http://localhost:8000' // API Gateway 로컬 서버
     case 'production':
       return config.API_BASE // Route53으로 설정된 도메인
     default:

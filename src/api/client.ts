@@ -51,9 +51,14 @@ function createApiClient() {
     hooks: {
     beforeRequest: [
       (request) => {
-        // Authorization 헤더 추가 (JWT가 있는 경우)
+        // Authorization 헤더 추가
         const token = localStorage.getItem('auth_token')
-        if (token) {
+
+        // 개발 모드에서는 개발용 슈퍼키 사용
+        if (!token && getConfig().ENV === 'development') {
+          request.headers.set('Authorization', `Bearer dev-super-key-local-testing`)
+          request.headers.set('X-Dev-Mode', 'true')
+        } else if (token) {
           request.headers.set('Authorization', `Bearer ${token}`)
         }
 

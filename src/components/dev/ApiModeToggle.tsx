@@ -57,7 +57,7 @@ export function ApiModeToggle({ className, variant = 'modal' }: ApiModeTogglePro
       case 'mock':
         return '더미 데이터'
       case 'local':
-        return '로컬 서버 (localhost:8010)'
+        return '로컬 Gateway (localhost:8000)'
       case 'production':
         return '운영 서버 (api.traffictacos.store)'
       default:
@@ -131,7 +131,7 @@ export function ApiModeToggle({ className, variant = 'modal' }: ApiModeTogglePro
                   disabled={isLoading || currentMode === 'local'}
                   className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  🏠 Local (localhost:8010)
+                  🏠 Local (Gateway:8000)
                 </button>
               </div>
 
@@ -182,7 +182,7 @@ export function ApiModeToggle({ className, variant = 'modal' }: ApiModeTogglePro
             disabled={isLoading || currentMode === 'local'}
             className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            🏠 Local (localhost:8010)
+            🏠 Local (Gateway:8000)
           </button>
         </div>
 

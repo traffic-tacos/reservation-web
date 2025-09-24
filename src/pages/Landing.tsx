@@ -17,23 +17,28 @@ function Landing() {
   }))
 
   const joinQueueMutation = useMutation({
-    mutationFn: (eventId: string) => queueApi.join({
-      event_id: eventId,
-      user_id: 'anonymous' // 임시 사용자 ID
-    }),
+    mutationFn: (eventId: string) => {
+      console.log('🎯 Mutation starting - calling queueApi.join with:', { event_id: eventId, user_id: 'anonymous' })
+      return queueApi.join({
+        event_id: eventId,
+        user_id: 'anonymous' // 임시 사용자 ID
+      })
+    },
     onSuccess: (data) => {
+      console.log('✅ Mutation success - received data:', data)
       // 대기열 토큰을 localStorage에 저장
       localStorage.setItem('waiting_token', data.waiting_token)
       navigate('/queue')
     },
     onError: (error) => {
-      console.error('대기열 참여 실패:', error)
+      console.error('❌ Mutation error:', error)
       alert('대기열 참여에 실패했습니다. 다시 시도해주세요.')
     },
   })
 
   const handleJoinQueue = () => {
     if (!selectedEvent) return
+    console.log('🚀 handleJoinQueue called with event:', selectedEvent)
     joinQueueMutation.mutate(selectedEvent)
   }
 
