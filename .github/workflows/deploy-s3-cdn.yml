@@ -1,0 +1,118 @@
+name: Deploy to S3 & CloudFront
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment (skip cache)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: ap-northeast-2
+  S3_BUCKET: traffictacos.store-static-website
+  CLOUDFRONT_DISTRIBUTION_ID: E2J89BTI216W6U
+  NODE_VERSION: '18'
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint:ci
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build for production
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_BUILD_ENV: production
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          echo "🚀 Deploying to S3 bucket: ${{ env.S3_BUCKET }}"
+
+          # Set appropriate cache headers
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "max-age=86400" \
+            --exclude "*.html" \
+            --exclude "sw.js" \
+            --exclude "manifest.json"
+
+          # HTML files with shorter cache
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --cache-control "max-age=3600" \
+            --include "*.html" \
+            --include "sw.js" \
+            --include "manifest.json"
+
+          echo "✅ S3 deployment completed"
+
+      - name: Create CloudFront invalidation
+        run: |
+          echo "🔄 Creating CloudFront invalidation..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+
+          echo "✅ CloudFront invalidation created: $INVALIDATION_ID"
+          echo "🌐 Distribution URL: https://d2lvyoth1pev4s.cloudfront.net"
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bundle Size**: $(du -sh dist/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **File Count**: $(find dist/ -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront URL**: https://d2lvyoth1pev4s.cloudfront.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Bucket**: s3://${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "🎉 Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

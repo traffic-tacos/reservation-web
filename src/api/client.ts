@@ -59,7 +59,6 @@ function createApiClient() {
         // 개발 모드에서는 개발용 슈퍼키 사용
         if (!token && getConfig().ENV === 'development') {
           request.headers.set('Authorization', `Bearer dev-super-key-local-testing`)
-          request.headers.set('X-Dev-Mode', 'true')
         } else if (token) {
           request.headers.set('Authorization', `Bearer ${token}`)
         }
@@ -115,7 +114,12 @@ export const apiClient = {
   get: <T = any>(url: string, options?: RequestInit) => {
     const api = getApi()
     if (!api) throw new Error('API client not available in mock mode')
-    return api.get(url, options).json<ApiResponse<T>>().then(res => res.data)
+    return api.get(url, options).json<ApiResponse<T>>().then(res => {
+      if (res.data === undefined) {
+        throw new Error('API response data is missing')
+      }
+      return res.data
+    })
   },
 
   post: <T = any>(url: string, data?: any, options?: RequestInit) => {
@@ -129,6 +133,9 @@ export const apiClient = {
     console.log('📡 Making POST request to:', url)
     return api.post(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => {
       console.log('✅ POST response received:', res)
+      if (res.data === undefined) {
+        throw new Error('API response data is missing')
+      }
       return res.data
     })
   },
@@ -136,19 +143,34 @@ export const apiClient = {
   put: <T = any>(url: string, data?: any, options?: RequestInit) => {
     const api = getApi()
     if (!api) throw new Error('API client not available in mock mode')
-    return api.put(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+    return api.put(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => {
+      if (res.data === undefined) {
+        throw new Error('API response data is missing')
+      }
+      return res.data
+    })
   },
 
   patch: <T = any>(url: string, data?: any, options?: RequestInit) => {
     const api = getApi()
     if (!api) throw new Error('API client not available in mock mode')
-    return api.patch(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+    return api.patch(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => {
+      if (res.data === undefined) {
+        throw new Error('API response data is missing')
+      }
+      return res.data
+    })
   },
 
   delete: <T = any>(url: string, options?: RequestInit) => {
     const api = getApi()
     if (!api) throw new Error('API client not available in mock mode')
-    return api.delete(url, options).json<ApiResponse<T>>().then(res => res.data)
+    return api.delete(url, options).json<ApiResponse<T>>().then(res => {
+      if (res.data === undefined) {
+        throw new Error('API response data is missing')
+      }
+      return res.data
+    })
   },
 }
 
