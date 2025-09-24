@@ -20,7 +20,7 @@
     "ci:check": "npm run type-check && npm run lint:ci && npm run test:ci && npm run build:ci"
   },
   "dependencies": {
-    "@headlessui/react": "^1.7.17",
+    "@headlessui/react": "^2.2.8",
     "@tanstack/react-query": "^5.14.0",
     "framer-motion": "^11.0.3",
     "ky": "^1.2.0",
