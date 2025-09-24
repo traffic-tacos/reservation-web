@@ -1,6 +1,6 @@
 import ky from 'ky'
 import { v4 as uuidv4 } from 'uuid'
-import { getConfig } from '@/utils/config'
+import { getConfig, getApiBaseUrl } from '@/utils/config'
 
 // API 에러 타입 정의
 export class ApiError extends Error {
@@ -30,17 +30,25 @@ export function generateIdempotencyKey(): string {
   return uuidv4()
 }
 
-// 기본 ky 인스턴스 생성
-const api = ky.create({
-  prefixUrl: getConfig().API_BASE,
-  timeout: 5000, // 5초 타임아웃
-  retry: {
-    limit: 2,
-    methods: ['get'], // GET만 재시도
-    statusCodes: [408, 429, 500, 502, 503, 504],
-    backoffLimit: 30000, // 최대 30초 백오프
-  },
-  hooks: {
+// 동적으로 API 클라이언트 생성 함수
+function createApiClient() {
+  const baseUrl = getApiBaseUrl()
+
+  // Mock 모드의 경우 ky 인스턴스 없이 직접 처리
+  if (!baseUrl) {
+    return null
+  }
+
+  return ky.create({
+    prefixUrl: baseUrl,
+    timeout: 5000, // 5초 타임아웃
+    retry: {
+      limit: 2,
+      methods: ['get'], // GET만 재시도
+      statusCodes: [408, 429, 500, 502, 503, 504],
+      backoffLimit: 30000, // 최대 30초 백오프
+    },
+    hooks: {
     beforeRequest: [
       (request) => {
         // Authorization 헤더 추가 (JWT가 있는 경우)
@@ -87,24 +95,45 @@ const api = ky.create({
       },
     ],
   },
-})
+  })
+}
+
+// API 클라이언트 인스턴스 가져오기
+function getApi() {
+  return createApiClient()
+}
 
 // HTTP 메소드 래퍼 함수들
 export const apiClient = {
-  get: <T = any>(url: string, options?: RequestInit) =>
-    api.get(url, options).json<ApiResponse<T>>().then(res => res.data),
+  get: <T = any>(url: string, options?: RequestInit) => {
+    const api = getApi()
+    if (!api) throw new Error('API client not available in mock mode')
+    return api.get(url, options).json<ApiResponse<T>>().then(res => res.data)
+  },
 
-  post: <T = any>(url: string, data?: any, options?: RequestInit) =>
-    api.post(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data),
+  post: <T = any>(url: string, data?: any, options?: RequestInit) => {
+    const api = getApi()
+    if (!api) throw new Error('API client not available in mock mode')
+    return api.post(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+  },
 
-  put: <T = any>(url: string, data?: any, options?: RequestInit) =>
-    api.put(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data),
+  put: <T = any>(url: string, data?: any, options?: RequestInit) => {
+    const api = getApi()
+    if (!api) throw new Error('API client not available in mock mode')
+    return api.put(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+  },
 
-  patch: <T = any>(url: string, data?: any, options?: RequestInit) =>
-    api.patch(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data),
+  patch: <T = any>(url: string, data?: any, options?: RequestInit) => {
+    const api = getApi()
+    if (!api) throw new Error('API client not available in mock mode')
+    return api.patch(url, { json: data, ...options }).json<ApiResponse<T>>().then(res => res.data)
+  },
 
-  delete: <T = any>(url: string, options?: RequestInit) =>
-    api.delete(url, options).json<ApiResponse<T>>().then(res => res.data),
+  delete: <T = any>(url: string, options?: RequestInit) => {
+    const api = getApi()
+    if (!api) throw new Error('API client not available in mock mode')
+    return api.delete(url, options).json<ApiResponse<T>>().then(res => res.data)
+  },
 }
 
 // 멱등성 키를 포함한 POST 요청 헬퍼

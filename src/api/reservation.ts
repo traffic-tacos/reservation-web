@@ -1,5 +1,5 @@
-// import { apiClient, postWithIdempotency } from './client'
-import { mockReservations, mockApiDelay, mockRandomSuccess, mockErrors } from '@/data/mockData'
+import { getApiMode } from '@/utils/config'
+import { realReservationApi } from './reservationReal'
 
 // 타입 정의
 export interface ReservationCreateRequest {
@@ -28,73 +28,55 @@ export interface ReservationCancelResponse {
   status: string
 }
 
-// API 함수들
+/**
+ * API 모드에 따라 적절한 구현체를 선택하는 스마트 스위처
+ */
+function getReservationApiImplementation() {
+  const mode = getApiMode()
+
+  switch (mode) {
+    case 'mock':
+      return import('./reservationMock').then(module => module.mockReservationApi)
+    case 'local':
+    case 'production':
+      return Promise.resolve(realReservationApi)
+    default:
+      console.warn(`Unknown API mode: ${mode}, falling back to mock`)
+      return import('./reservationMock').then(module => module.mockReservationApi)
+  }
+}
+
+// API 함수들 - 런타임에 적절한 구현체로 라우팅
 export const reservationApi = {
   /**
    * 예약을 생성합니다.
    */
   create: async (data: ReservationCreateRequest): Promise<ReservationCreateResponse> => {
-    await mockApiDelay()
-
-    if (!mockRandomSuccess(0.9)) {
-      throw new Error(mockErrors.INVENTORY_CONFLICT.message)
-    }
-
-    // 더미 예약 생성
-    const newReservation = {
-      id: `rsv_${Date.now()}`,
-      event_id: data.event_id,
-      seat_ids: data.seat_ids,
-      quantity: data.quantity,
-      reservation_token: data.reservation_token,
-      user_id: data.user_id,
-      hold_expires_at: new Date(Date.now() + 60000).toISOString(), // 1분 후 만료
-    }
-
-    return {
-      reservation_id: newReservation.id,
-      hold_expires_at: newReservation.hold_expires_at,
-    }
+    const impl = await getReservationApiImplementation()
+    return impl.create(data)
   },
 
   /**
    * 예약을 확정합니다.
    */
-  confirm: async (_reservationId: string, _data: ReservationConfirmRequest): Promise<ReservationConfirmResponse> => {
-    await mockApiDelay()
-
-    if (!mockRandomSuccess(0.95)) {
-      throw new Error(mockErrors.RESERVATION_EXPIRED.message)
-    }
-
-    return {
-      order_id: `ord_${Date.now()}`,
-      status: 'CONFIRMED',
-    }
+  confirm: async (reservationId: string, data: ReservationConfirmRequest): Promise<ReservationConfirmResponse> => {
+    const impl = await getReservationApiImplementation()
+    return impl.confirm(reservationId, data)
   },
 
   /**
    * 예약을 취소합니다.
    */
-  cancel: async (_reservationId: string): Promise<ReservationCancelResponse> => {
-    await mockApiDelay()
-
-    return {
-      status: 'CANCELLED',
-    }
+  cancel: async (reservationId: string): Promise<ReservationCancelResponse> => {
+    const impl = await getReservationApiImplementation()
+    return impl.cancel(reservationId)
   },
 
   /**
    * 예약 정보를 조회합니다.
    */
   get: async (reservationId: string) => {
-    await mockApiDelay(300)
-
-    const reservation = mockReservations.find(r => r.id === reservationId)
-    if (!reservation) {
-      throw new Error('예약을 찾을 수 없습니다.')
-    }
-
-    return reservation
+    const impl = await getReservationApiImplementation()
+    return impl.get(reservationId)
   },
 }

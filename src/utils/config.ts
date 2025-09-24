@@ -1,6 +1,7 @@
 // 런타임 설정 타입 정의
 export interface AppConfig {
   API_BASE: string
+  API_MODE: 'mock' | 'local' | 'production'
   ENV: 'development' | 'staging' | 'production'
   FEATURES: {
     REQUIRE_LOGIN_TO_RESERVE: boolean
@@ -14,7 +15,8 @@ export interface AppConfig {
 
 // 기본 설정값
 const defaultConfig: AppConfig = {
-  API_BASE: 'https://api.traffic-tacos.com',
+  API_BASE: 'https://api.traffictacos.store',
+  API_MODE: 'mock',
   ENV: 'development',
   FEATURES: {
     REQUIRE_LOGIN_TO_RESERVE: false,
@@ -32,6 +34,7 @@ let configCache: AppConfig | null = null
 /**
  * 런타임 설정을 로드합니다.
  * /public/config.json 파일을 fetch하여 설정을 가져옵니다.
+ * 개발 모드에서는 localStorage에서 오버라이드 설정도 확인합니다.
  * 실패 시 기본 설정을 반환합니다.
  */
 export async function loadConfig(): Promise<AppConfig> {
@@ -40,7 +43,28 @@ export async function loadConfig(): Promise<AppConfig> {
   }
 
   try {
-    const response = await fetch('/config.json')
+    // 개발 모드에서 localStorage 오버라이드 확인
+    const devOverride = localStorage.getItem('dev_api_config')
+    if (devOverride && defaultConfig.ENV === 'development') {
+      try {
+        const overrideConfig = JSON.parse(devOverride)
+        configCache = {
+          ...defaultConfig,
+          ...overrideConfig,
+          FEATURES: {
+            ...defaultConfig.FEATURES,
+            ...overrideConfig.FEATURES,
+          },
+        }
+        console.log('🔧 Dev override config loaded:', configCache?.API_MODE)
+        return configCache!
+      } catch (error) {
+        console.warn('Invalid dev override config, ignoring:', error)
+        localStorage.removeItem('dev_api_config')
+      }
+    }
+
+    const response = await fetch('/config.json', { cache: 'no-store' })
     if (!response.ok) {
       throw new Error(`Failed to load config: ${response.status}`)
     }
@@ -57,10 +81,15 @@ export async function loadConfig(): Promise<AppConfig> {
       },
     }
 
+    console.log('⚙️ Config loaded:', configCache?.API_MODE, 'from', configCache?.API_BASE)
     return configCache!
   } catch (error) {
-    console.warn('Failed to load config.json, using defaults:', error)
-    configCache = defaultConfig
+    console.warn('Config load failed, using safe defaults:', error)
+    // 실패해도 토글 보이도록 개발 모드 기본값 설정
+    configCache = {
+      ...defaultConfig,
+      ENV: 'development', // ← 실패해도 토글 보이도록
+    }
     return configCache
   }
 }
@@ -85,4 +114,43 @@ export function isEnvironment(env: AppConfig['ENV']): boolean {
  */
 export function isFeatureEnabled(feature: keyof AppConfig['FEATURES']): boolean {
   return getConfig().FEATURES[feature]
+}
+
+/**
+ * 현재 API 모드를 반환합니다.
+ */
+export function getApiMode(): AppConfig['API_MODE'] {
+  return getConfig().API_MODE
+}
+
+/**
+ * API 모드에 따른 기본 URL을 반환합니다.
+ */
+export function getApiBaseUrl(): string {
+  const config = getConfig()
+
+  switch (config.API_MODE) {
+    case 'mock':
+      return '' // Mock API는 URL이 필요 없음
+    case 'local':
+      return 'http://localhost:8010' // reservation-api 로컬 서버
+    case 'production':
+      return config.API_BASE // Route53으로 설정된 도메인
+    default:
+      return config.API_BASE
+  }
+}
+
+/**
+ * API 모드별 prefix 설정을 반환합니다.
+ */
+export function getApiPrefix(): string {
+  const config = getConfig()
+
+  switch (config.API_MODE) {
+    case 'production':
+      return '/api/v1/reservations' // Route53에서 prefix routing
+    default:
+      return '/api/v1/reservations'
+  }
 }
