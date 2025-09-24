@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { ApiModeToggle } from './dev/ApiModeToggle'
 
 function Header() {
   return (
@@ -24,6 +25,9 @@ function Header() {
 
           {/* 로그인/프로필 버튼 - 추후 구현 */}
           <div className="flex items-center space-x-4">
+            {/* API 모드 토글 (개발 환경에서만) */}
+            <ApiModeToggle variant="inline" />
+
             <button className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               로그인
             </button>

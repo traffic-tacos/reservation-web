@@ -1,31 +1,33 @@
 import { useState } from 'react'
-import { getConfig, getApiMode } from '@/utils/config'
+import { getConfig, getApiMode, resolveConfigAssetUrl } from '@/utils/config'
 import type { AppConfig } from '@/utils/config'
 
 interface ApiModeToggleProps {
   className?: string
+  variant?: 'modal' | 'inline'
 }
 
-export function ApiModeToggle({ className }: ApiModeToggleProps) {
+export function ApiModeToggle({ className, variant = 'modal' }: ApiModeToggleProps) {
   const [currentMode] = useState<AppConfig['API_MODE']>(getApiMode())
   const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
 
   const switchToMode = async (mode: AppConfig['API_MODE']) => {
     setIsLoading(true)
     try {
-      // 설정 파일을 동적으로 로드
-      let configUrl = '/config.json'
+      const targetFile =
+        mode === 'local'
+          ? 'config.local.json'
+          : mode === 'production'
+            ? 'config.production.json'
+            : 'config.json'
 
-      if (mode === 'local') {
-        configUrl = '/config.local.json'
-      } else if (mode === 'production') {
-        configUrl = '/config.production.json'
-      }
+      const configUrl = resolveConfigAssetUrl(targetFile)
 
       // 새 설정 로드
-      const response = await fetch(configUrl)
+      const response = await fetch(configUrl, { cache: 'no-store' })
       if (!response.ok) {
-        throw new Error(`Failed to load config: ${response.status}`)
+        throw new Error(`Failed to load config: ${response.status} from ${configUrl}`)
       }
 
       const newConfig = await response.json()
@@ -81,6 +83,77 @@ export function ApiModeToggle({ className }: ApiModeToggleProps) {
     return null
   }
 
+  // 인라인 버전 (헤더용)
+  if (variant === 'inline') {
+    return (
+      <div className={`relative ${className}`}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          disabled={isLoading}
+          className={`px-3 py-1 rounded-md text-xs font-medium border transition-colors ${getModeColor(currentMode)} hover:opacity-80 disabled:opacity-50`}
+        >
+          {currentMode.toUpperCase()}
+        </button>
+
+        {isOpen && (
+          <>
+            {/* 배경 오버레이 */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setIsOpen(false)}
+            />
+            {/* 드롭다운 메뉴 */}
+            <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-lg shadow-lg border min-w-[200px]">
+              <div className="p-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">API 모드</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  현재: {getModeDescription(currentMode)}
+                </p>
+              </div>
+
+              <div className="p-1">
+                <button
+                  onClick={() => {
+                    switchToMode('mock')
+                    setIsOpen(false)
+                  }}
+                  disabled={isLoading || currentMode === 'mock'}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🎭 Mock (더미 데이터)
+                </button>
+
+                <button
+                  onClick={() => {
+                    switchToMode('local')
+                    setIsOpen(false)
+                  }}
+                  disabled={isLoading || currentMode === 'local'}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🏠 Local (localhost:8010)
+                </button>
+              </div>
+
+              {isLoading && (
+                <div className="p-3 border-t border-gray-100 text-center">
+                  <div className="inline-flex items-center text-xs text-gray-500">
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    모드 변경 중...
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // 기존 모달 버전 (기본값)
   return (
     <div className={`fixed top-4 right-4 z-50 ${className}`}>
       <div className="bg-white rounded-lg shadow-lg border p-4 min-w-[280px]">
@@ -110,14 +183,6 @@ export function ApiModeToggle({ className }: ApiModeToggleProps) {
             className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             🏠 Local (localhost:8010)
-          </button>
-
-          <button
-            onClick={() => switchToMode('production')}
-            disabled={isLoading || currentMode === 'production'}
-            className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            🚀 Production (Route53)
           </button>
         </div>
 

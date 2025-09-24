@@ -31,6 +31,29 @@ const defaultConfig: AppConfig = {
 // 전역 설정 캐시
 let configCache: AppConfig | null = null
 
+// Reserve runtime asset path resolution so SPA served from sub-path still finds configs
+function buildConfigUrl(filename: string): string {
+  const baseFromEnv = import.meta.env.BASE_URL ?? '/'
+  const normalizedBase = baseFromEnv.endsWith('/') ? baseFromEnv : `${baseFromEnv}/`
+  const sanitizedFilename = filename.startsWith('/') ? filename.slice(1) : filename
+
+  if (typeof window !== 'undefined') {
+    const originBase = new URL(normalizedBase, window.location.origin)
+    return new URL(sanitizedFilename, originBase).toString()
+  }
+
+  return `${normalizedBase}${sanitizedFilename}`
+}
+
+export function resolveConfigAssetUrl(path: string): string {
+  try {
+    return buildConfigUrl(path)
+  } catch (error) {
+    console.warn('Failed to resolve config URL, falling back to relative path:', error)
+    return path
+  }
+}
+
 /**
  * 런타임 설정을 로드합니다.
  * /public/config.json 파일을 fetch하여 설정을 가져옵니다.
@@ -64,9 +87,10 @@ export async function loadConfig(): Promise<AppConfig> {
       }
     }
 
-    const response = await fetch('/config.json', { cache: 'no-store' })
+    const configUrl = resolveConfigAssetUrl('config.json')
+    const response = await fetch(configUrl, { cache: 'no-store' })
     if (!response.ok) {
-      throw new Error(`Failed to load config: ${response.status}`)
+      throw new Error(`Failed to load config: ${response.status} from ${configUrl}`)
     }
 
     const config = await response.json()

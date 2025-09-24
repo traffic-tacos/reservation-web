@@ -3,7 +3,6 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
 import { loadConfig } from './utils/config'
-import { ApiModeToggle } from './components/dev/ApiModeToggle'
 
 // Lazy loading으로 페이지 컴포넌트들 불러오기
 const Landing = lazy(() => import('./pages/Landing'))
@@ -43,7 +42,6 @@ function App() {
           <Route path="/confirm" element={<Confirm />} />
         </Routes>
       </Suspense>
-      <ApiModeToggle />
     </Layout>
   )
 }
