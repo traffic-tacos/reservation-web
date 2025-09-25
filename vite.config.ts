@@ -1,10 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Custom plugin to copy only favicon files in production
+    {
+      name: 'copy-favicons',
+      writeBundle() {
+        if (process.env.NODE_ENV === 'production') {
+          // Copy only favicon files to dist
+          const faviconFiles = ['vite.svg', 'favicon.ico']
+          faviconFiles.forEach(file => {
+            const src = resolve(__dirname, 'public', file)
+            const dest = resolve(__dirname, 'dist', file)
+            if (existsSync(src)) {
+              copyFileSync(src, dest)
+              console.log(`Copied ${file} to dist/`)
+            }
+          })
+        }
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
