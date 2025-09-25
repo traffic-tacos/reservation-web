@@ -41,6 +41,7 @@ export default defineConfig({
       },
     },
   },
+  publicDir: process.env.NODE_ENV === 'production' ? false : 'public',
   server: {
     port: 3000,
   },

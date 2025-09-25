@@ -66,6 +66,25 @@ export async function loadConfig(): Promise<AppConfig> {
   }
 
   try {
+    // 프로덕션 빌드에서는 빌드타임 설정 사용
+    if (import.meta.env.PROD) {
+      configCache = {
+        API_BASE: 'https://api.traffictacos.store',
+        API_MODE: 'production',
+        ENV: 'production',
+        FEATURES: {
+          REQUIRE_LOGIN_TO_RESERVE: true,
+          ENABLE_ANALYTICS: true,
+          ENABLE_ERROR_REPORTING: true,
+        },
+        QUEUE_POLLING_INTERVAL: 2000,
+        RESERVATION_HOLD_TIME: 300,
+        PAYMENT_TIMEOUT: 600,
+      }
+      console.log('⚙️ Production config loaded:', configCache.API_MODE, 'from', configCache.API_BASE)
+      return configCache
+    }
+
     // 개발 모드에서 localStorage 오버라이드 확인
     const devOverride = localStorage.getItem('dev_api_config')
     if (devOverride && defaultConfig.ENV === 'development') {
@@ -87,32 +106,40 @@ export async function loadConfig(): Promise<AppConfig> {
       }
     }
 
-    const configUrl = resolveConfigAssetUrl('config.json')
-    const response = await fetch(configUrl, { cache: 'no-store' })
-    if (!response.ok) {
-      throw new Error(`Failed to load config: ${response.status} from ${configUrl}`)
+    // 개발 환경에서만 config.json 로드 시도
+    try {
+      const configUrl = resolveConfigAssetUrl('config.json')
+      const response = await fetch(configUrl, { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error(`Failed to load config: ${response.status} from ${configUrl}`)
+      }
+
+      const config = await response.json()
+
+      // 기본 설정과 병합하여 유효성 검증
+      configCache = {
+        ...defaultConfig,
+        ...config,
+        FEATURES: {
+          ...defaultConfig.FEATURES,
+          ...config.FEATURES,
+        },
+      }
+
+      console.log('⚙️ Config loaded:', configCache?.API_MODE, 'from', configCache?.API_BASE)
+      return configCache!
+    } catch (error) {
+      console.warn('Config load failed, using defaults:', error)
+      // 개발 환경에서 config.json 로드 실패시 기본값 사용
+      configCache = defaultConfig
+      return configCache
     }
-
-    const config = await response.json()
-
-    // 기본 설정과 병합하여 유효성 검증
-    configCache = {
-      ...defaultConfig,
-      ...config,
-      FEATURES: {
-        ...defaultConfig.FEATURES,
-        ...config.FEATURES,
-      },
-    }
-
-    console.log('⚙️ Config loaded:', configCache?.API_MODE, 'from', configCache?.API_BASE)
-    return configCache!
   } catch (error) {
-    console.warn('Config load failed, using safe defaults:', error)
-    // 실패해도 토글 보이도록 개발 모드 기본값 설정
+    console.warn('Config initialization failed, using safe defaults:', error)
+    // 최종 fallback
     configCache = {
       ...defaultConfig,
-      ENV: 'development', // ← 실패해도 토글 보이도록
+      ENV: 'development',
     }
     return configCache
   }
