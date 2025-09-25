@@ -1,6 +1,5 @@
 import { apiClient, postWithIdempotency } from './client'
 import { getApiMode } from '@/utils/config'
-import { mockApiDelay, mockRandomSuccess, mockErrors } from '@/data/mockData'
 
 // 타입 정의
 export interface QueueJoinRequest {
@@ -38,9 +37,10 @@ export const queueApi = {
     const mode = getApiMode()
     console.log('🔥 Queue join called - API Mode:', mode, 'Data:', data)
 
-    // Mock 모드
-    if (mode === 'mock') {
+    // Mock 모드 (개발 환경에서만)
+    if (mode === 'mock' && !import.meta.env.PROD) {
       console.log('📝 Using mock mode for queue join')
+      const { mockApiDelay, mockRandomSuccess, mockErrors } = await import('@/data/mockData')
       await mockApiDelay()
 
       if (!mockRandomSuccess(0.95)) {
@@ -79,8 +79,9 @@ export const queueApi = {
   getStatus: async (token: string): Promise<QueueStatusResponse> => {
     const mode = getApiMode()
 
-    // Mock 모드
-    if (mode === 'mock') {
+    // Mock 모드 (개발 환경에서만)
+    if (mode === 'mock' && !import.meta.env.PROD) {
+      const { mockApiDelay } = await import('@/data/mockData')
       await mockApiDelay(500) // 짧은 딜레이로 폴링 시뮬레이션
 
       // 토큰별로 상태를 추적하기 위한 간단한 캐시
@@ -131,8 +132,9 @@ export const queueApi = {
   enter: async (data: QueueEnterRequest): Promise<QueueEnterResponse> => {
     const mode = getApiMode()
 
-    // Mock 모드
-    if (mode === 'mock') {
+    // Mock 모드 (개발 환경에서만)
+    if (mode === 'mock' && !import.meta.env.PROD) {
+      const { mockApiDelay, mockRandomSuccess, mockErrors } = await import('@/data/mockData')
       await mockApiDelay()
 
       if (!mockRandomSuccess(0.9)) {
