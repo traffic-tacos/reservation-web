@@ -13,8 +13,8 @@ on:
 
 env:
   AWS_REGION: ap-northeast-2
-  S3_BUCKET: traffictacos.store-static-website
-  CLOUDFRONT_DISTRIBUTION_ID: E2J89BTI216W6U
+  S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
   NODE_VERSION: '18'
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
             --output text)
 
           echo "✅ CloudFront invalidation created: $INVALIDATION_ID"
-          echo "🌐 Distribution URL: https://d2lvyoth1pev4s.cloudfront.net"
+          echo "🌐 Distribution URL: ${{ vars.CLOUDFRONT_URL }}"
 
       - name: Deployment Summary
         run: |
@@ -104,7 +104,7 @@ jobs:
           echo "- **File Count**: $(find dist/ -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- **CloudFront URL**: https://d2lvyoth1pev4s.cloudfront.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront URL**: ${{ vars.CLOUDFRONT_URL }}" >> $GITHUB_STEP_SUMMARY
           echo "- **S3 Bucket**: s3://${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify deployment
