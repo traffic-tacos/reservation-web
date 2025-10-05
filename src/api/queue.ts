@@ -17,6 +17,7 @@ export interface QueueStatusResponse {
   position?: number        // 실제 대기열 순번 (백엔드 Redis ZRANK)
   eta_sec?: number        // 예상 대기 시간 (초)
   waiting_time?: number   // 현재까지 대기한 시간 (초)
+  ready_for_entry?: boolean // 입장 가능 여부 (Position 1-10 또는 Token Bucket 허용)
   callCount?: number      // 폴링 횟수 (내부 추적용)
 }
 

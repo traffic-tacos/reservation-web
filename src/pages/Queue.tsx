@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -9,6 +9,7 @@ import { queueApi } from '@/api/queue'
 function Queue() {
   const navigate = useNavigate()
   const [waitingToken] = useState(() => localStorage.getItem('waiting_token') || '')
+  const [isEntering, setIsEntering] = useState(false) // 중복 입장 방지
 
   // 대기열 상태 조회 쿼리
   const { data: queueStatus, error: statusError } = useQuery({
@@ -34,6 +35,8 @@ function Queue() {
     },
     onError: (error) => {
       console.error('❌ [LOAD TEST] Enter failed (continuing):', error)
+      // 실패 시에만 플래그 해제 (성공 시 페이지 이동으로 자동 해제)
+      setIsEntering(false)
       // 부하 테스트용: 에러 발생해도 알림 없이 계속 진행
       // alert 제거 - 사용자 플로우 중단하지 않음
     },
@@ -58,6 +61,22 @@ function Queue() {
     console.log('🔥 [LOAD TEST] User clicked enter button')
     enterMutation.mutate()
   }
+
+  // 🎯 자동 입장 로직: ready_for_entry=true 감지 시 자동 입장
+  useEffect(() => {
+    if (
+      queueStatus?.ready_for_entry && 
+      !isEntering && 
+      status === 'waiting' &&
+      !enterMutation.isPending
+    ) {
+      console.log('🚀 [AUTO ENTER] ready_for_entry detected! Auto-entering...')
+      console.log('📊 [AUTO ENTER] Position:', queueStatus.position, 'Waiting time:', queueStatus.waiting_time)
+      setIsEntering(true)
+      handleEnter()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueStatus?.ready_for_entry, isEntering, status, enterMutation.isPending])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -90,6 +109,33 @@ function Queue() {
             animate={{ scale: 1 }}
             className="space-y-6"
           >
+            {/* 🎉 입장 준비 완료 배너 */}
+            {queueStatus?.ready_for_entry && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-green-50 border-2 border-green-500 rounded-lg p-4"
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-green-900 font-semibold">
+                    ✅ 입장 준비 완료! 자동으로 입장 중...
+                  </span>
+                </div>
+                {isEntering && (
+                  <div className="flex items-center justify-center space-x-2 mt-2">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full" />
+                    </motion.div>
+                    <span className="text-sm text-green-700">입장 처리 중...</span>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary-600">{position.toLocaleString()}</div>
@@ -115,16 +161,19 @@ function Queue() {
               </div>
             </div>
 
-            <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-              <Clock size={16} />
-              <span>대기 중...</span>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              >
-                <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full" />
-              </motion.div>
-            </div>
+            {/* 대기 상태 메시지 */}
+            {!queueStatus?.ready_for_entry && (
+              <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                <Clock size={16} />
+                <span>대기 중... (대기시간: {queueStatus?.waiting_time || 0}초)</span>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full" />
+                </motion.div>
+              </div>
+            )}
           </motion.div>
         )}
 
