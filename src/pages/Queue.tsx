@@ -45,7 +45,8 @@ function Queue() {
   }
 
   const status = queueStatus?.status || 'waiting'
-  const position = queueStatus ? Math.max(1, 20000 - (queueStatus.callCount || 0) * 5000) : 20000
+  // 백엔드에서 받은 실제 position 값 사용 (PoC: 실제 대기열 데이터 반영)
+  const position = queueStatus?.position ?? 0
   const etaSeconds = queueStatus?.eta_sec || 120
 
   const handleEnter = () => {
