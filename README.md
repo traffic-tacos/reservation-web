@@ -8,6 +8,8 @@ Vite + TypeScript + Tailwind CSS로 구축되었으며, 대규모 트래픽 상�
 - **대기열 시스템**: 30k RPS 트래픽에서도 안정적인 대기열 처리
 - **멱등성 보장**: 중복 요청 방지를 위한 Idempotency-Key 지원
 - **폭주 대응**: 지수 백오프와 폴링을 통한 안정적인 API 통신
+- **다중 API 모드**: Mock/Local/Production 환경 간 동적 전환 지원
+- **런타임 설정**: 빌드 없이 config.json으로 환경 설정 변경
 - **캐주얼 디자인**: 밝고 여유로운 UI로 사용자 친화적인 경험 제공
 - **성능 최적화**: 코드 스플리팅과 lazy loading 적용
 - **접근성**: WCAG 가이드라인 준수
@@ -37,50 +39,69 @@ Vite + TypeScript + Tailwind CSS로 구축되었으며, 대규모 트래픽 상�
 
 ```
 src/
-├── api/                 # API 클라이언트 및 서비스
-│   ├── client.ts       # HTTP 클라이언트 설정 (CORS 수정, 타입 안전성 강화)
-│   ├── queue.ts        # 대기열 API
-│   ├── reservation.ts  # 예약 API
-│   └── payment.ts      # 결제 API
-├── components/         # 재사용 가능한 UI 컴포넌트
-│   ├── Layout.tsx     # 레이아웃 컴포넌트
-│   ├── Header.tsx     # 헤더
-│   ├── Footer.tsx     # 푸터
-│   └── LoadingSpinner.tsx
-├── hooks/             # 커스텀 React 훅
-│   ├── useIdempotencyKey.ts
-│   ├── useCountDown.ts
-│   └── usePolling.ts
-├── pages/             # 페이지 컴포넌트
-│   ├── Landing.tsx    # 랜딩 페이지
-│   ├── Queue.tsx      # 대기열 페이지
-│   ├── Reserve.tsx    # 예약 페이지
-│   ├── Payment.tsx    # 결제 페이지
-│   └── Confirm.tsx    # 확인 페이지
-├── state/             # 상태 관리
-│   └── session.ts     # 세션 상태 (Zustand)
-├── styles/            # 스타일 파일
-│   └── index.css      # 글로벌 스타일
-├── utils/             # 유틸리티 함수
-│   └── config.ts      # 설정 관리
-├── observability/     # 관측성 관련
-└── i18n/             # 국제화
+├── api/                      # API 클라이언트 및 서비스
+│   ├── client.ts            # HTTP 클라이언트 설정 (ky 기반, 멱등성 지원)
+│   ├── queue.ts             # 대기열 API (Mock/Real 자동 전환)
+│   ├── reservation.ts       # 예약 API (스마트 라우팅)
+│   ├── reservationReal.ts   # 실제 API 구현체
+│   ├── reservationMock.ts   # Mock API 구현체 (개발용)
+│   └── payment.ts           # 결제 API
+├── components/              # 재사용 가능한 UI 컴포넌트
+│   ├── dev/                # 개발 전용 컴포넌트
+│   │   └── ApiModeToggle.tsx  # API 모드 전환 UI
+│   ├── Layout.tsx          # 레이아웃 컴포넌트
+│   ├── Header.tsx          # 헤더
+│   ├── Footer.tsx          # 푸터
+│   ├── LoadingSpinner.tsx  # 로딩 스피너
+│   └── ToastContainer.tsx  # 토스트 알림
+├── hooks/                   # 커스텀 React 훅
+│   ├── useIdempotencyKey.ts # 멱등성 키 생성 및 관리
+│   ├── useCountDown.ts      # 카운트다운 타이머
+│   └── usePolling.ts        # 폴링 로직
+├── pages/                   # 페이지 컴포넌트
+│   ├── Landing.tsx          # 랜딩 페이지
+│   ├── Queue.tsx            # 대기열 페이지
+│   ├── Reserve.tsx          # 예약 페이지
+│   ├── Payment.tsx          # 결제 페이지
+│   └── Confirm.tsx          # 확인 페이지
+├── state/                   # 상태 관리
+│   └── session.ts           # 세션 상태 (Zustand + persist)
+├── styles/                  # 스타일 파일
+│   └── index.css            # 글로벌 스타일 (Tailwind)
+├── utils/                   # 유틸리티 함수
+│   └── config.ts            # 런타임 설정 관리 (API 모드 전환)
+├── data/                    # Mock 데이터
+│   └── mockData.ts          # 개발용 더미 데이터
+├── test/                    # 테스트 설정
+│   └── setup.ts             # Vitest 설정
+├── observability/           # 관측성 관련 (예정)
+└── i18n/                    # 국제화 (예정)
 
 .github/
-└── workflows/         # GitHub Actions 워크플로우
-    ├── deploy-s3-cdn.yml    # 자동 S3/CDN 배포
-    ├── deploy-manual.yml    # 수동 배포
-    ├── security-scan.yml    # 보안 스캔
-    └── release.yml          # 릴리즈 관리
+├── workflows/               # GitHub Actions 워크플로우
+│   ├── deploy-s3-cdn.yml   # 자동 S3/CDN 배포
+│   ├── deploy-manual.yml   # 수동 배포
+│   ├── security-scan.yml   # 보안 스캔
+│   └── release.yml         # 릴리즈 관리
+├── dependabot.yml          # 의존성 자동 업데이트
+└── codeql-config.yml       # 코드 보안 분석
 
 scripts/
-└── deploy-test.sh     # 로컬 배포 테스트 스크립트
+└── deploy-test.sh          # 로컬 배포 테스트 스크립트
 
 public/
-├── config.json       # 런타임 설정
-└── index.html        # HTML 템플릿
+├── config.json             # 런타임 설정 (기본값)
+├── config.local.json       # 로컬 개발 설정
+└── config.production.json  # 프로덕션 설정
 
-DEPLOYMENT.md         # 배포 가이드 및 설정 문서
+tests/                      # E2E 테스트 (Playwright)
+coverage/                   # 테스트 커버리지 리포트
+dist/                       # 프로덕션 빌드 결과물
+
+Dockerfile                  # 컨테이너 이미지 빌드
+DEPLOYMENT.md               # 배포 가이드 및 설정 문서
+database-strategy.md        # 데이터베이스 전략 문서
+k6-load-test.js            # 부하 테스트 스크립트
 ```
 
 ## 🚀 시작하기
@@ -130,7 +151,8 @@ npm run ci:check
 
 ```json
 {
-  "API_BASE": "https://api.traffic-tacos.com",
+  "API_BASE": "https://api.traffictacos.store",
+  "API_MODE": "mock",
   "ENV": "development",
   "FEATURES": {
     "REQUIRE_LOGIN_TO_RESERVE": false,
@@ -142,6 +164,36 @@ npm run ci:check
   "PAYMENT_TIMEOUT": 300
 }
 ```
+
+#### API 모드 설정
+
+프론트엔드는 3가지 API 모드를 지원합니다:
+
+1. **Mock 모드** (`API_MODE: "mock"`):
+   - 더미 데이터로 동작
+   - 백엔드 서버 없이 개발 가능
+   - 빠른 프로토타이핑 및 UI 개발에 적합
+
+2. **Local 모드** (`API_MODE: "local"`):
+   - 로컬 Gateway API (http://localhost:8000) 연결
+   - 전체 백엔드 스택과 통합 테스트
+   - 실제 API 동작 확인
+
+3. **Production 모드** (`API_MODE: "production"`):
+   - 운영 서버 (https://api.traffictacos.store) 연결
+   - 실제 배포 환경
+
+#### 개발 중 API 모드 전환
+
+개발 환경에서는 UI를 통해 API 모드를 동적으로 전환할 수 있습니다:
+- 헤더 우측 상단의 API 모드 토글 버튼 클릭
+- 또는 localStorage에 설정 저장:
+  ```javascript
+  localStorage.setItem('dev_api_config', JSON.stringify({
+    API_MODE: 'local',
+    API_BASE: 'http://localhost:8000'
+  }))
+  ```
 
 ## 🎯 사용자 플로우
 
@@ -234,13 +286,23 @@ npm run test:coverage
 
 ### 지원되는 엔드포인트
 
+#### 대기열 관리
 - `POST /api/v1/queue/join` - 대기열 참여
-- `GET /api/v1/queue/status` - 대기열 상태 조회
+- `GET /api/v1/queue/status?token={waiting_token}` - 대기열 상태 조회
 - `POST /api/v1/queue/enter` - 입장 허가 요청
-- `POST /api/v1/reservations` - 예약 생성
+- `DELETE /api/v1/queue/leave` - 대기열 이탈
+
+#### 예약 관리
+- `GET /api/v1/events/{id}/availability` - 가용성 조회
+- `POST /api/v1/reservations` - 예약 생성 (멱등성 키 필수)
+- `GET /api/v1/reservations/{id}` - 예약 조회
 - `POST /api/v1/reservations/{id}/confirm` - 예약 확정
-- `POST /api/v1/reservations/{id}/cancel` - 예약 취소
-- `POST /api/v1/payment/intent` - 결제 인텐트 생성
+- `DELETE /api/v1/reservations/{id}` - 예약 취소
+
+#### 결제 처리
+- `POST /api/v1/payments/intent` - 결제 인텐트 생성
+- `POST /api/v1/payments/process` - 결제 처리
+- `GET /api/v1/payments/{id}/status` - 결제 상태 조회
 
 ### 에러 처리
 
@@ -255,6 +317,15 @@ npm run test:coverage
   }
 }
 ```
+
+### API 클라이언트 특징
+
+- **자동 재시도**: GET 요청에 대해 지수 백오프 재시도
+- **타임아웃**: 5초 기본 타임아웃 설정
+- **인증**: JWT Bearer 토큰 자동 추가
+- **트레이싱**: X-Trace-Id 헤더 자동 생성
+- **멱등성**: Idempotency-Key 헤더 지원
+- **Fallback**: API 실패 시 Mock 데이터로 자동 전환 (개발 모드)
 
 ## 🚀 배포
 

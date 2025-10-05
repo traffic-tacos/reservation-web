@@ -102,3 +102,6 @@ public
 
 # CI/CD
 .github/workflows/*.log
+
+# References
+references/

@@ -11,26 +11,38 @@ function Queue() {
   const [waitingToken] = useState(() => localStorage.getItem('waiting_token') || '')
 
   // 대기열 상태 조회 쿼리
-  const { data: queueStatus } = useQuery({
+  const { data: queueStatus, error: statusError } = useQuery({
     queryKey: ['queue-status', waitingToken],
     queryFn: () => queueApi.getStatus(waitingToken),
     enabled: !!waitingToken,
     refetchInterval: 2000, // 2초마다 자동 갱신
+    retry: 3, // 실패 시 3번 재시도
+    retryDelay: 1000, // 1초 간격으로 재시도
+    // 부하 테스트용: 에러 발생해도 계속 폴링
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 
   // 입장 뮤테이션
   const enterMutation = useMutation({
     mutationFn: () => queueApi.enter({ waiting_token: waitingToken }),
     onSuccess: (data) => {
+      console.log('✅ [LOAD TEST] Enter success, navigating to reserve')
       // 예약 토큰 저장
       localStorage.setItem('reservation_token', data.reservation_token)
       navigate('/reserve')
     },
     onError: (error) => {
-      console.error('입장 실패:', error)
-      alert('입장에 실패했습니다. 다시 시도해주세요.')
+      console.error('❌ [LOAD TEST] Enter failed (continuing):', error)
+      // 부하 테스트용: 에러 발생해도 알림 없이 계속 진행
+      // alert 제거 - 사용자 플로우 중단하지 않음
     },
   })
+
+  // 부하 테스트용: 에러 로깅만 하고 페이지는 유지
+  if (statusError) {
+    console.warn('⚠️ [LOAD TEST] Queue status error (page continues):', statusError)
+  }
 
   const status = queueStatus?.status || 'waiting'
   const position = queueStatus ? Math.max(1, 20000 - (queueStatus.callCount || 0) * 5000) : 20000
@@ -38,10 +50,11 @@ function Queue() {
 
   const handleEnter = () => {
     if (!waitingToken) {
-      alert('대기열 토큰이 없습니다. 처음부터 다시 시작해주세요.')
-      navigate('/')
-      return
+      console.warn('⚠️ [LOAD TEST] No waiting token, but attempting enter anyway')
+      // 부하 테스트용: 토큰 없어도 시도 (fallback 토큰 사용)
+      // alert 제거, navigate 제거
     }
+    console.log('🔥 [LOAD TEST] User clicked enter button')
     enterMutation.mutate()
   }
 

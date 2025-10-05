@@ -1,269 +1,351 @@
 ---
-description: API Gateway 컴포넌트 상세 기술 요구사항 및 구현 가이드
+description: Reservation Web 프론트엔드 상세 기술 요구사항 및 구현 가이드
 alwaysApply: true
 ---
 
-# API Gateway: 고성능 BFF (Backend for Frontend)
+# Reservation Web: 티켓 예매 프론트엔드
 
 ## 🎯 컴포넌트 역할
-EKS 환경에서 동작하는 고성능 BFF로서 외부 클라이언트의 단일 진입점 역할을 수행
+Traffic Tacos MSA 플랫폼의 사용자 대면 웹 애플리케이션으로, 대기열 관리부터 예약 완료까지의 전체 사용자 여정을 제공
 
 ## 📋 컨텍스트
-- **시스템 목표**: 30k RPS 유입 트래픽 안정 처리
+- **시스템 목표**: 30k RPS 트래픽 환경에서 안정적인 사용자 경험 제공
 - **주요 책임**:
-  - JWT 검증 (OIDC/Cognito 연동)
-  - 요청 표준화 및 집계
-  - Idempotency-Key 검증 및 관리
-  - 백엔드 서비스로의 REST 포워딩
-  - 선택적 캐싱 및 요청 합성
+  - 대기열 시스템을 통한 트래픽 제어
+  - 실시간 예약 상태 관리 및 표시
+  - 멱등성 보장을 통한 중복 요청 방지
+  - 다중 API 모드 지원 (Mock/Local/Production)
+  - 런타임 설정 기반 환경 전환
 
 ## 🛠️ 기술 스택
 
 ### Core Framework
-- **언어**: Go 1.22+
-- **런타임**: Linux ARM64 (Graviton)
-- **웹 프레임워크**: Fiber v2
-- **모듈 시스템**: Go Modules
+- **언어**: TypeScript 5.2+
+- **런타임**: Node.js 20+
+- **빌드 도구**: Vite 5.0
+- **UI 라이브러리**: React 18
 
-### 인증 & 보안
-- **JWT 라이브러리**: lestrrat-go/jwx v2
-- **JWK 캐시**: Redis 기반 (10분 TTL)
-- **시큐리티 헤더**: 자동 추가 (CSP, HSTS, X-Frame-Options)
+### 상태 관리
+- **클라이언트 상태**: Zustand (persist 미들웨어)
+- **서버 상태**: TanStack Query v5
+- **세션 관리**: localStorage 기반 영구 저장
 
-### 데이터 저장소
-- **캐시**: Redis (ElastiCache)
-  - 레이트 리미팅 카운터
-  - Idempotency 키 저장
-  - JWK 캐시
-- **메트릭**: Prometheus 클라이언트
-- **트레이싱**: OpenTelemetry OTLP
+### 스타일링
+- **CSS 프레임워크**: Tailwind CSS 3.3
+- **애니메이션**: Framer Motion 11
+- **UI 컴포넌트**: Headless UI
 
 ### HTTP 클라이언트
-- **표준 라이브러리**: net/http
-- **커스텀 트랜스포트**:
-  - 타임아웃 설정 (600ms 백엔드 호출)
-  - 커넥션 풀 (MaxIdleConns: 2000)
-  - 재시도 로직 (멱등 요청만)
+- **라이브러리**: Ky (fetch 기반)
+- **기능**:
+  - 자동 재시도 (지수 백오프)
+  - 타임아웃 설정 (5초)
+  - JWT 토큰 자동 추가
+  - 멱등성 키 지원
+  - API 모드별 라우팅
 
 ## 🏗️ 아키텍처 설계
 
 ### 프로젝트 구조
 ```
-cmd/gateway/main.go                    # 애플리케이션 진입점
-internal/
-├── config/config.go                  # 환경설정 관리
-├── logging/logger.go                 # 구조화 로깅
-├── metrics/metrics.go                # Prometheus 메트릭
-├── middleware/                       # 미들웨어 컴포넌트
-│   ├── auth.go                      # JWT 인증
-│   ├── idempotency.go              # 멱등성 관리
-│   ├── ratelimit.go               # 레이트 리미팅
-│   ├── tracing.go                 # 분산 추적
-│   └── manager.go                 # 미들웨어 관리자
-├── clients/                        # 백엔드 클라이언트
-│   ├── reservation.go             # 예약 API 클라이언트
-│   └── payment.go                # 결제 API 클라이언트
-└── routes/                         # API 핸들러
-    ├── queue.go                   # 대기열 엔드포인트
-    ├── reservation.go            # 예약 엔드포인트
-    ├── payment.go               # 결제 엔드포인트
-    └── routes.go                # 라우트 설정
+src/
+├── api/                      # API 클라이언트 계층
+│   ├── client.ts            # HTTP 클라이언트 (ky 기반)
+│   ├── queue.ts             # 대기열 API (Mock/Real 자동 전환)
+│   ├── reservation.ts       # 예약 API (스마트 라우팅)
+│   ├── reservationReal.ts   # 실제 API 구현체
+│   ├── reservationMock.ts   # Mock API 구현체
+│   └── payment.ts           # 결제 API
+├── components/              # UI 컴포넌트
+│   ├── dev/                # 개발 전용 컴포넌트
+│   │   └── ApiModeToggle.tsx  # API 모드 전환 UI
+│   ├── Layout.tsx          # 레이아웃
+│   ├── Header.tsx          # 헤더
+│   ├── Footer.tsx          # 푸터
+│   └── LoadingSpinner.tsx  # 로딩 스피너
+├── pages/                   # 페이지 컴포넌트
+│   ├── Landing.tsx         # 랜딩 페이지
+│   ├── Queue.tsx           # 대기열 페이지
+│   ├── Reserve.tsx         # 예약 페이지
+│   ├── Payment.tsx         # 결제 페이지
+│   └── Confirm.tsx         # 확인 페이지
+├── state/                   # 상태 관리
+│   └── session.ts          # Zustand 세션 스토어
+├── hooks/                   # 커스텀 훅
+│   ├── useIdempotencyKey.ts
+│   ├── useCountDown.ts
+│   └── usePolling.ts
+├── utils/                   # 유틸리티
+│   └── config.ts           # 런타임 설정 관리
+└── data/                    # Mock 데이터
+    └── mockData.ts         # 개발용 더미 데이터
 ```
 
 ### 설정 관리
-- **환경변수 기반**: 12-factor 앱 준수
-- **필수 변수 검증**: 부팅 시점 유효성 검사
-- **기본값 제공**: 개발 편의성 고려
+- **런타임 설정**: `/public/config.json` 기반 동적 설정
+- **API 모드 전환**: Mock/Local/Production 간 동적 전환
+- **환경별 설정**: config.local.json, config.production.json
+- **개발자 오버라이드**: localStorage 기반 설정 덮어쓰기
 
-## 🔌 API 엔드포인트
+## 🔌 API 통합
 
-### 공개 엔드포인트
+### 지원되는 엔드포인트
+
+#### 대기열 관리
 ```yaml
-POST /api/v1/queue/join        # 대기열 참여 (익명 허용)
+POST /api/v1/queue/join        # 대기열 참여
 GET  /api/v1/queue/status      # 대기열 상태 조회
-POST /api/v1/reservations      # 예약 생성 (멱등성 필수)
-POST /api/v1/reservations/{id}/cancel  # 예약 취소
+POST /api/v1/queue/enter       # 입장 허가 요청
+DELETE /api/v1/queue/leave     # 대기열 이탈
+```
+
+#### 예약 관리
+```yaml
+GET  /api/v1/events/{id}/availability  # 가용성 조회
+POST /api/v1/reservations              # 예약 생성 (멱등성 필수)
+GET  /api/v1/reservations/{id}         # 예약 조회
 POST /api/v1/reservations/{id}/confirm # 예약 확정
-POST /api/v1/payment/intent    # 결제 인텐트 생성
-GET  /healthz                  # 헬스 체크
-GET  /readyz                   # readiness 체크
-GET  /version                  # 버전 정보
-GET  /metrics                  # Prometheus 메트릭
+DELETE /api/v1/reservations/{id}       # 예약 취소
 ```
 
-### 인증 요구사항
-- **Bearer 토큰**: `Authorization: Bearer <JWT>`
-- **JWK 검증**: JWKS 엔드포인트 기반 동적 검증
-- **클레임 검증**: aud, iss, exp 필수 검증
-- **익명 엔드포인트**: 화이트리스트 기반 예외 처리
-
-### 멱등성 관리
-- **헤더 요구**: `Idempotency-Key: <uuid-v4>`
-- **저장소**: Redis (TTL: 5분)
-- **충돌 처리**: 동일 키 + 다른 바디 = 409 에러
-- **응답 캐시**: 성공 응답 임시 저장
-
-### 레이트 리미팅
-- **알고리즘**: 토큰 버킷 (Redis Lua 기반)
-- **제한**: IP/사용자별 50 RPS, 버스트 100
-- **응답**: 429 + Retry-After 헤더
-- **예외**: 헬스체크 엔드포인트
-
-## 🔄 백엔드 연동
-
-### Reservation API (Spring Boot)
+#### 결제 처리
 ```yaml
-base_url: http://reservation-api.tickets-api.svc.cluster.local:8010
-timeout: 600ms
-mapping:
-  /api/v1/reservations/* → /v1/reservations/*
-headers:
-  - x-request-id
-  - traceparent
-  - authorization
+POST /api/v1/payments/intent           # 결제 인텐트 생성
+POST /api/v1/payments/process          # 결제 처리
+GET  /api/v1/payments/{id}/status      # 결제 상태 조회
 ```
 
-### Payment API (Go)
-```yaml
-base_url: http://payment-sim-api.tickets-api.svc.cluster.local:8030
-timeout: 400ms
-mapping:
-  /api/v1/payment/* → /v1/sim/*
-```
+### API 모드별 동작
+
+#### Mock 모드
+- 더미 데이터로 응답
+- 네트워크 요청 없음
+- 빠른 UI 개발 및 프로토타이핑
+- 프로덕션 빌드에서 자동 제외
+
+#### Local 모드
+- Gateway API (localhost:8000) 연결
+- 실제 백엔드 스택과 통합
+- 개발 환경에서 전체 플로우 테스트
+
+#### Production 모드
+- 운영 서버 (api.traffictacos.store) 연결
+- 실제 배포 환경
+- 프로덕션 빌드 기본값
+
+### 클라이언트 특징
+- **자동 재시도**: GET 요청에 대해 지수 백오프
+- **타임아웃**: 5초 기본 설정
+- **인증**: JWT Bearer 토큰 자동 추가 (개발 모드: dev-super-key)
+- **트레이싱**: X-Trace-Id 헤더 자동 생성
+- **멱등성**: Idempotency-Key 헤더 지원
+- **Fallback**: API 실패 시 Mock 응답으로 자동 전환
+
+## 🔄 사용자 플로우
+
+### 1. 이벤트 선택 (Landing)
+- 이벤트 목록 표시
+- 대기열 참여 버튼 클릭
+
+### 2. 대기열 대기 (Queue)
+- 실시간 대기열 상태 폴링 (2초 간격)
+- 예상 대기 시간 및 순번 표시
+- 입장 준비 완료 시 자동 알림
+- 60초 타이머로 입장 토큰 만료 관리
+
+### 3. 좌석 예약 (Reserve)
+- 좌석 및 수량 선택
+- 60초 홀드 타이머 표시
+- 실시간 재고 확인
+- 멱등성 키로 중복 예약 방지
+
+### 4. 결제 처리 (Payment)
+- 결제 시뮬레이션 모드 선택
+  - 승인 (approve)
+  - 실패 (fail)
+  - 지연 (delay)
+- 결제 인텐트 생성
+- 결제 상태 폴링
+
+### 5. 예매 완료 (Confirm)
+- 예매 정보 요약 표시
+- 공유 및 재예매 옵션
 
 ## 📊 관측성 (Observability)
 
-### 메트릭 수집
-```yaml
-http_server_requests_total{method, route, status_code}
-http_server_requests_duration_seconds_bucket{method, route, status_code}
-backend_call_duration_seconds{service, method, status_code}
-ratelimit_dropped_total{}
-idempotency_hits_total{type}  # "hit" or "miss"
+### Web Vitals 수집 (예정)
+- Core Web Vitals 자동 수집
+- API 전송 및 모니터링
+- 성능 메트릭 추적
+
+### 에러 바운더리
+- React Error Boundary 적용
+- Graceful 에러 처리
+- 사용자 친화적 에러 메시지
+
+### 개발 도구
+- **API 모드 토글**: 헤더에서 실시간 전환
+- **콘솔 로깅**: 개발 모드에서 상세 로그
+- **네트워크 추적**: X-Trace-Id 헤더 전파
+
+## ⚡ 성능 최적화
+
+### 번들 최적화
+- **코드 스플리팅**: React.lazy로 페이지별 분할
+- **청크 전략**: vendor, router, query, ui 청크 분리
+- **Tree Shaking**: 프로덕션 빌드에서 Mock 코드 제외
+- **Dynamic Import**: API 모드별 조건부 로딩
+
+### 캐싱 전략
+- **TanStack Query**: 서버 상태 자동 캐싱
+- **Zustand Persist**: 세션 상태 localStorage 영구 저장
+- **HTTP 캐싱**: GET 요청 자동 캐싱
+
+### 로딩 최적화
+- **Lazy Loading**: 페이지 컴포넌트 지연 로딩
+- **Suspense**: 로딩 상태 관리
+- **Prefetching**: 예상 경로 미리 로드 (예정)
+
+## 🚀 배포 전략
+
+### CI/CD 파이프라인
+
+#### 자동 배포 (main 브랜치)
+1. **린트 & 타입 체크**: ESLint + TypeScript
+2. **테스트**: Vitest 단위 테스트 + 커버리지
+3. **빌드**: Vite 프로덕션 빌드
+4. **S3 업로드**: traffictacos.store-static-website
+5. **CloudFront 무효화**: E2J89BTI216W6U
+
+#### 수동 배포 (GitHub Actions)
+- **Staging**: `/staging/` 경로에 배포 (1시간 캐시)
+- **Production**: 루트 경로에 배포 (24시간 캐시)
+
+### 배포 환경
+
+#### S3 + CloudFront
+- **S3 버킷**: traffictacos.store-static-website
+- **CloudFront 배포**: E2J89BTI216W6U
+- **CloudFront URL**: https://d2lvyoth1pev4s.cloudfront.net
+- **리전**: ap-northeast-2 (Seoul)
+
+#### 캐시 전략
+- **정적 자산** (JS, CSS, 이미지): 24시간
+- **HTML 파일**: 1시간
+- **Service Worker**: 1시간
+
+### Docker 배포 (선택)
+```dockerfile
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/dist/ /usr/share/nginx/html/
+# SPA fallback 설정
+RUN sed -i 's#try_files $uri $uri/ =404;#try_files $uri $uri/ /index.html;#' /etc/nginx/conf.d/default.conf
+EXPOSE 80
 ```
 
-### 구조화 로깅
-```json
-{
-  "ts": "2024-01-01T12:00:00Z",
-  "level": "info",
-  "msg": "request_completed",
-  "http": {
-    "method": "POST",
-    "route": "/api/v1/reservations",
-    "status": 201
-  },
-  "latency_ms": 45.2,
-  "trace_id": "abc123...",
-  "user_id": "user456..."
-}
+## 🧪 테스트 전략
+
+### 단위 테스트 (Vitest)
+```bash
+npm run test              # Watch 모드
+npm run test:ci           # CI 모드 + 커버리지
+npm run test:ui           # UI 모드
 ```
 
-### 트레이싱
-- **샘플링**: 기본 10%, 예약 경로는 100%
-- **컨텍스트 전파**: W3C Trace Context
-- **백엔드 추적**: 모든 아웃바운드 요청에 헤더 주입
+**커버리지 목표:**
+- Branches: 70%
+- Functions: 70%
+- Lines: 70%
+- Statements: 70%
 
-## ⚡ 성능 요구사항
+**테스트 범위:**
+- 컴포넌트 렌더링 테스트
+- 커스텀 훅 테스트
+- API 클라이언트 모킹 테스트
+- 상태 관리 테스트
 
-### 목표 지표
-- **P95 지연시간**: < 50ms (백엔드 제외)
-- **에러율**: < 0.5%
-- **429 비율**: ≤ 1% (Admission 컨트롤)
-
-### 최적화 포인트
-- **GOMAXPROCS**: CPU 코어 수에 맞춤
-- **HTTP/1.1 우선**: Envoy/ALB 호환성
-- **커넥션 풀**: MaxIdleConns=2000, IdlePerHost=1000
-- **메모리 관리**: ReadOnlyRootFilesystem
-
-### HPA 고려사항
-- **CPU 기반**: 60% utilization
-- **메모리 기반**: 70% utilization
-- **커스텀 메트릭**: RPS 기반 스케일링
-
-## 🚀 배포 요구사항
-
-### Kubernetes 리소스
-```yaml
-requests:
-  cpu: 200m
-  memory: 256Mi
-limits:
-  cpu: 1000m
-  memory: 512Mi
+### E2E 테스트 (Playwright)
+```bash
+npm run test:e2e          # E2E 테스트 실행
+npm run test:e2e:ui       # UI 모드
 ```
 
-### 보안 컨텍스트
-```yaml
-runAsNonRoot: true
-runAsUser: 10001
-runAsGroup: 10001
-readOnlyRootFilesystem: true
-capabilities:
-  drop: [ALL]
+**테스트 시나리오:**
+- 전체 예약 플로우
+- 대기열 시스템
+- 에러 처리
+- 모바일 반응형
+
+### 부하 테스트 (k6)
+```bash
+k6 run k6-load-test.js
 ```
 
-### 네트워크 정책
-- **인그레스**: Gateway API 컨트롤러만 허용
-- **이그레스**: 백엔드 서비스 + OTLP 콜렉터만 허용
-
-## 🧪 테스트 요구사항
-
-### 유닛 테스트
-- **커버리지**: 80% 이상 목표
-- **핸들러별**: 미들웨어, 클라이언트, 라우트별 테스트
-- **모킹**: 백엔드 서비스, Redis, JWKS 모킹
-
-### 통합 테스트
-- **API 계약**: OpenAPI 스펙 기반 검증
-- **부하 테스트**: k6 기반 시나리오 테스트
-- **E2E 테스트**: 전체 플로우 검증
-
-### 성능 테스트
-```javascript
-// k6 스크립트 구조
-export const options = {
-  scenarios: {
-    load_test: {
-      stages: [
-        { duration: '1m', target: 500 },
-        { duration: '3m', target: 2000 },
-        { duration: '5m', target: 5000 },
-      ]
-    }
-  },
-  thresholds: {
-    'http_req_duration{status:200}': ['p(95)<500'],
-    'http_req_failed': ['rate<0.05'],
-  }
-}
-```
+**시나리오:**
+- 대기열 참여 부하
+- 예약 생성 동시성
+- API 응답 시간 측정
 
 ## 📋 구현 체크리스트
 
-### 필수 기능
-- [ ] JWT 인증 미들웨어
-- [ ] Idempotency 키 검증
-- [ ] Redis 기반 레이트 리미팅
-- [ ] 백엔드 API 클라이언트
-- [ ] 구조화된 로깅
-- [ ] Prometheus 메트릭
-- [ ] OpenTelemetry 트레이싱
-- [ ] 헬스체크 엔드포인트
+### 핵심 기능
+- [x] 대기열 시스템 (Queue)
+- [x] 예약 생성 및 관리 (Reserve)
+- [x] 결제 시뮬레이션 (Payment)
+- [x] 예약 확정 (Confirm)
+- [x] 멱등성 키 관리
+- [x] API 모드 전환 (Mock/Local/Production)
+- [x] 런타임 설정 관리
+
+### 상태 관리
+- [x] Zustand 세션 스토어
+- [x] localStorage 영구 저장
+- [x] TanStack Query 서버 상태
+- [x] 대기열 토큰 관리
+- [x] 예약 토큰 관리
+
+### UI/UX
+- [x] 반응형 디자인 (모바일/데스크톱)
+- [x] 로딩 스피너
+- [x] 카운트다운 타이머
+- [x] 토스트 알림
+- [x] 에러 바운더리
+- [x] API 모드 토글 UI
 
 ### 성능 최적화
-- [ ] HTTP 클라이언트 튜닝
-- [ ] 메모리 누수 방지
-- [ ] Graceful shutdown
-- [ ] 컨텍스트 타임아웃
+- [x] 코드 스플리팅 (React.lazy)
+- [x] 청크 최적화 (vendor, router, query, ui)
+- [x] Mock 코드 Tree Shaking
+- [x] Dynamic Import (API 모드별)
+- [x] HTTP 캐싱
 
-### 보안 강화
-- [ ] 보안 헤더 추가
-- [ ] 입력 검증 강화
-- [ ] 에러 정보 노출 제한
-- [ ] OWASP Top 10 대응
+### 배포
+- [x] Dockerfile (Nginx)
+- [x] GitHub Actions CI/CD
+- [x] S3 + CloudFront 배포
+- [x] 자동/수동 배포 워크플로우
+- [x] 보안 스캔 (CodeQL, Dependabot)
+
+### 테스트
+- [x] Vitest 단위 테스트 설정
+- [x] Playwright E2E 테스트 설정
+- [x] k6 부하 테스트 스크립트
+- [ ] 테스트 커버리지 70% 달성
+
+### 개선 예정
+- [ ] Web Vitals 수집 및 전송
+- [ ] OpenTelemetry 트레이싱
+- [ ] Service Worker (오프라인 지원)
+- [ ] i18n 국제화
+- [ ] 접근성 (WCAG) 개선
 
 ---
 
-*API Gateway 컴포넌트의 상세한 기술 요구사항 및 구현 가이드입니다.*
+*Reservation Web 프론트엔드의 상세한 기술 요구사항 및 구현 가이드입니다.*
