@@ -1,0 +1,13 @@
+{
+    "API_BASE": "https://api.traffictacos.store",
+    "API_MODE": "production",
+    "ENV": "production",
+    "FEATURES": {
+      "REQUIRE_LOGIN_TO_RESERVE": false,
+      "ENABLE_ANALYTICS": true,
+      "ENABLE_ERROR_REPORTING": true
+    },
+    "QUEUE_POLLING_INTERVAL": 2000,
+    "RESERVATION_HOLD_TIME": 60,
+    "PAYMENT_TIMEOUT": 300
+  }

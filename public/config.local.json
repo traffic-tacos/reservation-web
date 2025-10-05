@@ -1,0 +1,13 @@
+{
+  "API_BASE": "http://localhost:8000",
+  "API_MODE": "local",
+  "ENV": "development",
+  "FEATURES": {
+    "REQUIRE_LOGIN_TO_RESERVE": false,
+    "ENABLE_ANALYTICS": false,
+    "ENABLE_ERROR_REPORTING": false
+  },
+  "QUEUE_POLLING_INTERVAL": 2000,
+  "RESERVATION_HOLD_TIME": 60,
+  "PAYMENT_TIMEOUT": 300
+}
