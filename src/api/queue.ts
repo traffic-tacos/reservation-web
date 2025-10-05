@@ -14,8 +14,10 @@ export interface QueueJoinResponse {
 
 export interface QueueStatusResponse {
   status: 'waiting' | 'ready' | 'expired'
-  eta_sec?: number
-  callCount?: number
+  position?: number        // 실제 대기열 순번 (백엔드 Redis ZRANK)
+  eta_sec?: number        // 예상 대기 시간 (초)
+  waiting_time?: number   // 현재까지 대기한 시간 (초)
+  callCount?: number      // 폴링 횟수 (내부 추적용)
 }
 
 export interface QueueEnterRequest {
