@@ -62,6 +62,23 @@ function Queue() {
     enterMutation.mutate()
   }
 
+  const handleLeave = async () => {
+    if (!waitingToken) return
+    
+    console.log('🚪 [QUEUE] User clicked leave button')
+    try {
+      await queueApi.leave(waitingToken)
+      localStorage.removeItem('waiting_token')
+      console.log('✅ [QUEUE] Leave successful, navigating to home')
+      navigate('/')
+    } catch (error) {
+      console.error('❌ [QUEUE] Leave failed:', error)
+      // 실패해도 홈으로 이동
+      localStorage.removeItem('waiting_token')
+      navigate('/')
+    }
+  }
+
   // 🎯 자동 입장 로직: ready_for_entry=true 감지 시 자동 입장
   useEffect(() => {
     if (
@@ -77,6 +94,37 @@ function Queue() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueStatus?.ready_for_entry, isEntering, status, enterMutation.isPending])
+
+  // 🚪 브라우저 닫기/새로고침 시 대기열 이탈 처리
+  useEffect(() => {
+    if (!waitingToken) return
+
+    const handleBeforeUnload = () => {
+      console.log('🚪 [QUEUE] Browser closing/refreshing - attempting to leave queue')
+      
+      // Beacon API로 비동기 전송 (브라우저 종료 시에도 전송 보장)
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://api.traffictacos.store'
+      const url = `${apiBase}/api/v1/queue/leave?token=${encodeURIComponent(waitingToken)}`
+      
+      try {
+        // Beacon API는 POST만 지원하므로 DELETE 대신 POST 사용
+        navigator.sendBeacon(url, JSON.stringify({ waiting_token: waitingToken }))
+        console.log('✅ [QUEUE] Leave beacon sent')
+      } catch (error) {
+        console.warn('⚠️ [QUEUE] Leave beacon failed:', error)
+      }
+
+      // 사용자에게 확인 메시지 표시하려면 아래 주석 해제
+      // e.preventDefault()
+      // e.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [waitingToken])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -174,6 +222,14 @@ function Queue() {
                 </motion.div>
               </div>
             )}
+
+            {/* 대기열 나가기 버튼 */}
+            <button
+              onClick={handleLeave}
+              className="btn btn-secondary w-full mt-4"
+            >
+              대기열 나가기
+            </button>
           </motion.div>
         )}
 

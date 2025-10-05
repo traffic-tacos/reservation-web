@@ -175,4 +175,30 @@ export const queueApi = {
       }
     }
   },
+
+  /**
+   * 대기열에서 이탈합니다.
+   * 브라우저 닫기/새로고침 시 호출됩니다.
+   */
+  async leave(token: string): Promise<void> {
+    const mode = getApiMode()
+
+    // Mock 모드 (개발 환경에서만)
+    if (mode === 'mock' && !import.meta.env.PROD) {
+      const { mockApiDelay } = await import('@/data/mockData')
+      await mockApiDelay()
+      console.log('🚪 [MOCK] Queue leave - token:', token)
+      return
+    }
+
+    // Local/Production 모드 - 실제 API 호출
+    console.log('🚪 [QUEUE] Leaving queue - token:', token)
+    try {
+      await apiClient.delete(`api/v1/queue/leave?token=${encodeURIComponent(token)}`)
+      console.log('✅ [QUEUE] Leave SUCCESS')
+    } catch (error) {
+      console.warn('⚠️ [QUEUE] Leave FAILED (continuing):', error)
+      // Best effort - 실패해도 계속 진행
+    }
+  },
 }
