@@ -54,13 +54,20 @@ function createApiClient() {
     beforeRequest: [
       (request) => {
         // Authorization 헤더 추가 (JWT 토큰만 사용)
-        const token = localStorage.getItem('auth_token')
-
-        if (token) {
-          console.log('🔑 [AUTH] Using JWT token')
-          request.headers.set('Authorization', `Bearer ${token}`)
+        // 단, 로그인/회원가입 엔드포인트는 제외
+        const url = request.url
+        const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register')
+        
+        if (isAuthEndpoint) {
+          console.log('🔓 [AUTH] Auth endpoint - skipping Authorization header')
         } else {
-          console.log('🔓 [AUTH] No token - proceeding without Authorization header')
+          const token = localStorage.getItem('auth_token')
+          if (token) {
+            console.log('🔑 [AUTH] Using JWT token')
+            request.headers.set('Authorization', `Bearer ${token}`)
+          } else {
+            console.log('🔓 [AUTH] No token - proceeding without Authorization header')
+          }
         }
 
         // OpenTelemetry 트레이싱 헤더 (필요시)
