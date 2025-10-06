@@ -95,12 +95,14 @@ function Register() {
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="최소 6자 이상"
+              placeholder="비밀번호를 입력하세요"
               className="input"
               required
-              minLength={6}
               disabled={isLoading}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              백엔드 정책에 따라 검증됩니다 (권장: 6자 이상)
+            </p>
           </div>
 
           <div>

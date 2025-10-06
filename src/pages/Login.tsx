@@ -108,7 +108,6 @@ function Login() {
               placeholder="비밀번호를 입력하세요"
               className="input"
               required
-              minLength={6}
               disabled={isLoading}
             />
           </div>
