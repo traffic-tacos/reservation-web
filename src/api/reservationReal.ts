@@ -13,6 +13,7 @@ interface ApiReservationCreateRequest {
   event_id: string
   seat_ids: string[]
   quantity: number
+  reservation_token: string  // 🔑 입장 토큰 (필수)
   user_id: string
 }
 
@@ -105,17 +106,24 @@ export const realReservationApi = {
   create: async (data: ReservationCreateRequest): Promise<ReservationCreateResponse> => {
     const apiPrefix = getApiPrefix()
 
+    console.log('🎫 [RESERVATION API] Creating reservation with data:', data)
+
     const requestData: ApiReservationCreateRequest = {
       event_id: data.event_id,
       seat_ids: data.seat_ids,
       quantity: data.quantity,
+      reservation_token: data.reservation_token,  // 🔑 입장 토큰 포함
       user_id: data.user_id,
     }
+
+    console.log('📤 [RESERVATION API] Request payload:', requestData)
 
     const response = await postWithIdempotency<ApiReservationCreateResponse>(
       apiPrefix,
       requestData
     )
+
+    console.log('✅ [RESERVATION API] Response:', response)
 
     return {
       reservation_id: response.reservation_id,
