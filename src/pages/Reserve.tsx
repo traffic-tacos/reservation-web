@@ -40,8 +40,8 @@ function Reserve() {
       console.error('❌ [RESERVATION] Error message:', (error as Error).message)
       console.error('❌ [RESERVATION] Error stack:', (error as Error).stack)
       
-      // 부하 테스트용: alert 제거, 로깅만
-      console.warn('⚠️ [LOAD TEST] Reservation failed but continuing...')
+      // 사용자에게 에러 알림
+      alert(`예약에 실패했습니다.\n\n${(error as Error).message || '다시 시도해주세요.'}`)
     },
   })
 
