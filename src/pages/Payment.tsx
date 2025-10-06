@@ -44,8 +44,9 @@ function Payment() {
   })
 
   const handlePayment = async () => {
-    if (!reservationId) {
-      console.error('❌ No reservation ID')
+    if (!reservationId || reservationId === '') {
+      console.error('❌ No reservation ID or empty reservation ID')
+      console.error('❌ localStorage.reservation_id:', localStorage.getItem('reservation_id'))
       alert('예약 정보가 없습니다. 처음부터 다시 시작해주세요.')
       navigate('/')
       return

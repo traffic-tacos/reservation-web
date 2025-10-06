@@ -29,6 +29,15 @@ function Reserve() {
     },
     onSuccess: (response) => {
       console.log('✅ [RESERVATION] Create success:', response)
+      
+      // 예약 ID 검증
+      if (!response.reservation_id || response.reservation_id === '') {
+        console.error('❌ [RESERVATION] Empty reservation_id received from backend')
+        console.error('❌ [RESERVATION] Full response:', JSON.stringify(response, null, 2))
+        alert('예약 생성에 실패했습니다. (reservation_id가 비어있음)\n\n백엔드 팀에 문의해주세요.')
+        return
+      }
+      
       // 예약 ID 저장
       localStorage.setItem('reservation_id', response.reservation_id)
       localStorage.setItem('hold_expires_at', response.hold_expires_at)
