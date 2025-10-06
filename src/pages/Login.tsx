@@ -19,10 +19,15 @@ function Login() {
       
       // 임시: 개발용 JWT 토큰 생성
       const devToken = `dev-jwt-${Date.now()}-${email.split('@')[0]}`
+      
+      // 실제 로그인은 localStorage에 저장 (영구 보존)
       localStorage.setItem('auth_token', devToken)
       localStorage.setItem('user_email', email)
 
       console.log('✅ [LOGIN] Login success:', devToken)
+      
+      // 로그인 상태 변경 이벤트 발생
+      window.dispatchEvent(new Event('auth-changed'))
 
       // 로그인 후 리다이렉트
       const redirectPath = localStorage.getItem('redirect_after_login') || '/queue'
@@ -38,12 +43,17 @@ function Login() {
   }
 
   const handleGuestLogin = () => {
-    // 게스트 로그인 (임시 토큰)
+    // 게스트 로그인은 sessionStorage에 저장 (창 닫으면 삭제)
     const guestToken = `guest-${Date.now()}`
-    localStorage.setItem('auth_token', guestToken)
-    localStorage.setItem('user_email', 'guest@traffictacos.store')
+    
+    sessionStorage.setItem('auth_token', guestToken)
+    sessionStorage.setItem('user_email', 'guest@traffictacos.store')
 
-    console.log('✅ [LOGIN] Guest login success:', guestToken)
+    console.log('✅ [LOGIN] Guest login success (session only):', guestToken)
+    console.warn('⚠️ [LOGIN] Guest token will be cleared when browser is closed')
+    
+    // 로그인 상태 변경 이벤트 발생
+    window.dispatchEvent(new Event('auth-changed'))
 
     const redirectPath = localStorage.getItem('redirect_after_login') || '/queue'
     localStorage.removeItem('redirect_after_login')

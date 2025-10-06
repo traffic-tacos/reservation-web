@@ -54,13 +54,16 @@ function createApiClient() {
     beforeRequest: [
       (request) => {
         // Authorization 헤더 추가 (JWT 토큰이 있을 때만)
-        const token = localStorage.getItem('auth_token')
+        // localStorage (실제 로그인) 또는 sessionStorage (게스트) 확인
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
 
         if (token) {
-          console.log('🔑 [AUTH] Using JWT token from localStorage')
+          const tokenType = token.startsWith('guest-') ? 'Guest' : 'JWT'
+          const storage = localStorage.getItem('auth_token') ? 'localStorage' : 'sessionStorage'
+          console.log(`🔑 [AUTH] Using ${tokenType} token from ${storage}`)
           request.headers.set('Authorization', `Bearer ${token}`)
         } else {
-          console.log('🔓 [AUTH] No JWT token - proceeding without Authorization header')
+          console.log('🔓 [AUTH] No token - proceeding without Authorization header')
           // 로그인하지 않은 사용자도 대기열/예약 가능 (Authorization 헤더 없이)
         }
 

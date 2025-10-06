@@ -52,9 +52,31 @@ function Reserve() {
     console.log('📋 [RESERVATION] quantity:', quantity)
     console.log('📋 [RESERVATION] localStorage.reservation_token:', localStorage.getItem('reservation_token'))
 
-    // 로그인 여부 확인
-    const authToken = localStorage.getItem('auth_token')
+    // 로그인 여부 확인 (localStorage 또는 sessionStorage)
+    const authToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+    const isGuest = authToken?.startsWith('guest-')
+    
     console.log('🔑 [RESERVATION] Auth token exists:', !!authToken)
+    console.log('🔑 [RESERVATION] Is guest:', isGuest)
+
+    // 게스트 토큰은 예약 불가 (실제 로그인 필요)
+    if (isGuest) {
+      console.warn('⚠️ [RESERVATION] Guest token not allowed for reservation')
+      const shouldLogin = window.confirm(
+        '예약을 위해 정식 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'
+      )
+      if (shouldLogin) {
+        // 게스트 토큰 삭제
+        sessionStorage.removeItem('auth_token')
+        sessionStorage.removeItem('user_email')
+        window.dispatchEvent(new Event('auth-changed'))
+        
+        // 로그인 페이지로 이동
+        localStorage.setItem('redirect_after_login', window.location.pathname)
+        navigate('/login')
+      }
+      return
+    }
 
     if (!authToken) {
       console.warn('⚠️ [RESERVATION] No auth token - login required')
