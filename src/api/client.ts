@@ -56,10 +56,12 @@ function createApiClient() {
         // Authorization 헤더 추가
         const token = localStorage.getItem('auth_token')
 
-        // 개발 모드에서는 개발용 슈퍼키 사용
-        if (!token && getConfig().ENV === 'development') {
+        // 부하 테스트용: 모든 환경에서 개발용 슈퍼키 사용
+        if (!token) {
+          console.log('🔑 [AUTH] No auth_token in localStorage, using dev super key')
           request.headers.set('Authorization', `Bearer dev-super-key-local-testing`)
-        } else if (token) {
+        } else {
+          console.log('🔑 [AUTH] Using auth_token from localStorage')
           request.headers.set('Authorization', `Bearer ${token}`)
         }
 
