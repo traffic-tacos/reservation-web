@@ -67,7 +67,11 @@ export const authApi = {
     // Local/Production 모드 - 실제 API 호출
     console.log('🔐 [AUTH] Register - username:', data.username)
     try {
-      const response = await apiClient.post<AuthResponse>('api/v1/auth/register', data)
+      const response = await apiClient.post<AuthResponse>('api/v1/auth/register', data, {
+        headers: {
+          'Idempotency-Key': crypto.randomUUID(),
+        },
+      })
       console.log('✅ [AUTH] Register SUCCESS - user_id:', response.user_id)
       return response
     } catch (error: any) {
@@ -119,7 +123,11 @@ export const authApi = {
     // Local/Production 모드 - 실제 API 호출
     console.log('🔐 [AUTH] Login - username:', data.username)
     try {
-      const response = await apiClient.post<AuthResponse>('api/v1/auth/login', data)
+      const response = await apiClient.post<AuthResponse>('api/v1/auth/login', data, {
+        headers: {
+          'Idempotency-Key': crypto.randomUUID(),
+        },
+      })
       console.log('✅ [AUTH] Login SUCCESS - user_id:', response.user_id)
       return response
     } catch (error: any) {
