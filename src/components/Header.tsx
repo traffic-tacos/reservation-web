@@ -9,20 +9,14 @@ function Header() {
   const navigate = useNavigate()
   const [displayName, setDisplayName] = useState<string | null>(null)
 
-  // 로그인 상태 확인
+  // 로그인 상태 확인 (Auth API only)
   useEffect(() => {
     const checkAuth = () => {
       const user = getCurrentUser()
       if (user) {
         setDisplayName(user.display_name || user.username)
       } else {
-        // Legacy: 기존 게스트 세션 확인
-        const guestEmail = sessionStorage.getItem('user_email')
-        if (guestEmail) {
-          setDisplayName(guestEmail)
-        } else {
-          setDisplayName(null)
-        }
+        setDisplayName(null)
       }
     }
 
@@ -39,11 +33,8 @@ function Header() {
   }, [])
 
   const handleLogout = () => {
-    // 새로운 Auth API 방식의 데이터 제거
+    // Auth API 데이터 제거
     clearAuthData()
-    
-    // Legacy 게스트 데이터도 제거
-    sessionStorage.removeItem('user_email')
     
     setDisplayName(null)
     window.dispatchEvent(new Event('auth-changed'))

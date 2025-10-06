@@ -52,35 +52,13 @@ function Reserve() {
     console.log('📋 [RESERVATION] quantity:', quantity)
     console.log('📋 [RESERVATION] localStorage.reservation_token:', localStorage.getItem('reservation_token'))
 
-      // 로그인 여부 확인 (실제 JWT 또는 게스트 토큰)
-      const jwtToken = localStorage.getItem('auth_token')  // 실제 로그인 (Auth API)
-      const guestToken = sessionStorage.getItem('auth_token')  // 게스트 로그인
-      const isGuest = guestToken?.startsWith('guest-')
+      // 로그인 여부 확인 (Auth API JWT only)
+      const jwtToken = localStorage.getItem('auth_token')
       
       console.log('🔑 [RESERVATION] JWT token exists:', !!jwtToken)
-      console.log('🔑 [RESERVATION] Guest token exists:', !!guestToken)
-      console.log('🔑 [RESERVATION] Is guest:', isGuest)
 
-      // 게스트 토큰은 예약 불가 (실제 로그인 필요)
-      if (isGuest && !jwtToken) {
-        console.warn('⚠️ [RESERVATION] Guest token not allowed for reservation')
-        const shouldLogin = window.confirm(
-          '예약을 위해 정식 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'
-        )
-        if (shouldLogin) {
-          // 게스트 토큰 삭제
-          sessionStorage.removeItem('auth_token')
-          sessionStorage.removeItem('user_email')
-          window.dispatchEvent(new Event('auth-changed'))
-          
-          // 로그인 페이지로 이동
-          localStorage.setItem('redirect_after_login', window.location.pathname)
-          navigate('/login')
-        }
-        return
-      }
-
-      if (!jwtToken && !guestToken) {
+      // JWT 토큰 없으면 로그인 필요
+      if (!jwtToken) {
         console.warn('⚠️ [RESERVATION] No auth token - login required')
         const shouldLogin = window.confirm(
           '예약을 위해 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'

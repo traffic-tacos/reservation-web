@@ -170,11 +170,6 @@ export function clearAuthData() {
   localStorage.removeItem('display_name')
   localStorage.removeItem('role')
   localStorage.removeItem('token_expires_at')
-  localStorage.removeItem('user_email') // 기존 email 필드도 제거
-
-  // SessionStorage도 정리
-  sessionStorage.removeItem('auth_token')
-  sessionStorage.removeItem('user_email')
 
   console.log('🗑️ [AUTH] Auth data cleared from storage')
 }

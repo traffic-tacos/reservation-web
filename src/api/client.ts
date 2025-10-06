@@ -53,28 +53,14 @@ function createApiClient() {
     hooks: {
     beforeRequest: [
       (request) => {
-        // Authorization 헤더 추가 (JWT 토큰이 있을 때만)
-        // 1. 실제 JWT 토큰 (localStorage - Auth API 로그인)
-        // 2. 게스트 토큰 (sessionStorage - 임시)
-        const jwtToken = localStorage.getItem('auth_token')
-        const guestToken = sessionStorage.getItem('auth_token')
-        
-        const token = jwtToken || guestToken
+        // Authorization 헤더 추가 (JWT 토큰만 사용)
+        const token = localStorage.getItem('auth_token')
 
         if (token) {
-          // 토큰 타입 판별
-          let tokenType = 'Unknown'
-          if (jwtToken) {
-            tokenType = 'JWT (Real Login)'
-          } else if (guestToken && guestToken.startsWith('guest-')) {
-            tokenType = 'Guest (Session)'
-          }
-          
-          console.log(`🔑 [AUTH] Using ${tokenType} token`)
+          console.log('🔑 [AUTH] Using JWT token')
           request.headers.set('Authorization', `Bearer ${token}`)
         } else {
           console.log('🔓 [AUTH] No token - proceeding without Authorization header')
-          // 로그인하지 않은 사용자도 대기열/예약 가능 (Authorization 헤더 없이)
         }
 
         // OpenTelemetry 트레이싱 헤더 (필요시)

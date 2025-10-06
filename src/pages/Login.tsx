@@ -42,24 +42,6 @@ function Login() {
     }
   }
 
-  const handleGuestLogin = () => {
-    // 게스트 로그인은 sessionStorage에 저장 (창 닫으면 삭제)
-    const guestToken = `guest-${Date.now()}`
-    
-    sessionStorage.setItem('auth_token', guestToken)
-    sessionStorage.setItem('user_email', 'guest@traffictacos.store')
-
-    console.log('✅ [LOGIN] Guest login success (session only):', guestToken)
-    console.warn('⚠️ [LOGIN] Guest token will be cleared when browser is closed')
-    
-    // 로그인 상태 변경 이벤트 발생
-    window.dispatchEvent(new Event('auth-changed'))
-
-    const redirectPath = localStorage.getItem('redirect_after_login') || '/queue'
-    localStorage.removeItem('redirect_after_login')
-    
-    navigate(redirectPath)
-  }
 
   return (
     <div className="max-w-md mx-auto">
@@ -135,26 +117,6 @@ function Login() {
             )}
           </motion.button>
         </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">또는</span>
-            </div>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGuestLogin}
-            className="btn btn-secondary w-full mt-6"
-          >
-            게스트로 계속하기
-          </motion.button>
-        </div>
 
         <div className="mt-6 text-center space-y-2">
           <button
