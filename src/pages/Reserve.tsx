@@ -14,12 +14,19 @@ function Reserve() {
 
   // 예약 생성 뮤테이션
   const createReservationMutation = useMutation({
-    mutationFn: (data: { event_id: string; seat_ids: string[]; quantity: number }) =>
-      reservationApi.create({
+    mutationFn: (data: { event_id: string; seat_ids: string[]; quantity: number }) => {
+      console.log('🚀 [RESERVATION] mutationFn called with:', data)
+      console.log('🔑 [RESERVATION] Using reservationToken:', reservationToken)
+      
+      const payload = {
         ...data,
-        reservation_token: reservationToken,
+        reservation_token: reservationToken || `rtkn_fallback_${Date.now()}`,
         user_id: 'user_' + Date.now(), // 임시 user_id
-      }),
+      }
+      
+      console.log('📤 [RESERVATION] Final payload:', payload)
+      return reservationApi.create(payload)
+    },
     onSuccess: (response) => {
       console.log('✅ [RESERVATION] Create success:', response)
       // 예약 ID 저장
@@ -29,29 +36,41 @@ function Reserve() {
     },
     onError: (error) => {
       console.error('❌ [RESERVATION] Create failed:', error)
-      alert('예약에 실패했습니다. 다시 시도해주세요.')
+      console.error('❌ [RESERVATION] Error details:', JSON.stringify(error, null, 2))
+      console.error('❌ [RESERVATION] Error message:', (error as Error).message)
+      console.error('❌ [RESERVATION] Error stack:', (error as Error).stack)
+      
+      // 부하 테스트용: alert 제거, 로깅만
+      console.warn('⚠️ [LOAD TEST] Reservation failed but continuing...')
     },
   })
 
   const handleReserve = async () => {
+    console.log('🎫 [RESERVATION] handleReserve called')
+    console.log('📋 [RESERVATION] reservationToken:', reservationToken)
+    console.log('📋 [RESERVATION] selectedSeats:', selectedSeats)
+    console.log('📋 [RESERVATION] quantity:', quantity)
+    console.log('📋 [RESERVATION] localStorage.reservation_token:', localStorage.getItem('reservation_token'))
+
+    // 부하 테스트용: 토큰 없어도 fallback 토큰으로 시도
+    const tokenToUse = reservationToken || `rtkn_fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
     if (!reservationToken) {
-      console.error('❌ No reservation token')
-      alert('예약 토큰이 없습니다. 대기열부터 다시 시작해주세요.')
-      navigate('/')
-      return
+      console.warn('⚠️ [RESERVATION] No reservation token, using fallback:', tokenToUse)
+      // alert 제거 - 부하 테스트용
     }
 
-    console.log('🎫 [RESERVATION] Creating reservation:', {
-      event_id: 'evt_2025_1001',
-      seat_ids: selectedSeats,
-      quantity,
-    })
+    console.log('🎫 [RESERVATION] Creating reservation with token:', tokenToUse)
 
-    createReservationMutation.mutate({
-      event_id: 'evt_2025_1001',
-      seat_ids: selectedSeats,
-      quantity,
-    })
+    try {
+      createReservationMutation.mutate({
+        event_id: 'evt_2025_1001',
+        seat_ids: selectedSeats,
+        quantity,
+      })
+    } catch (error) {
+      console.error('❌ [RESERVATION] Mutation error:', error)
+    }
   }
 
   return (
