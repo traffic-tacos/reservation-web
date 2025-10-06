@@ -69,16 +69,13 @@ function Login() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="user01"
+              placeholder="사용자명을 입력하세요"
               className="input"
               required
               minLength={3}
               maxLength={20}
               disabled={isLoading}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              테스트 계정: user01~user10 / pwd01~pwd10
-            </p>
           </div>
 
           <div>
