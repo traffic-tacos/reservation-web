@@ -53,16 +53,15 @@ function createApiClient() {
     hooks: {
     beforeRequest: [
       (request) => {
-        // Authorization 헤더 추가
+        // Authorization 헤더 추가 (JWT 토큰이 있을 때만)
         const token = localStorage.getItem('auth_token')
 
-        // 부하 테스트용: 모든 환경에서 개발용 슈퍼키 사용
-        if (!token) {
-          console.log('🔑 [AUTH] No auth_token in localStorage, using dev super key')
-          request.headers.set('Authorization', `Bearer dev-super-key-local-testing`)
-        } else {
-          console.log('🔑 [AUTH] Using auth_token from localStorage')
+        if (token) {
+          console.log('🔑 [AUTH] Using JWT token from localStorage')
           request.headers.set('Authorization', `Bearer ${token}`)
+        } else {
+          console.log('🔓 [AUTH] No JWT token - proceeding without Authorization header')
+          // 로그인하지 않은 사용자도 대기열/예약 가능 (Authorization 헤더 없이)
         }
 
         // OpenTelemetry 트레이싱 헤더 (필요시)
