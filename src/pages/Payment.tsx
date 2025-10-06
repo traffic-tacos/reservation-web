@@ -1,31 +1,67 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { CreditCard } from 'lucide-react'
+import { paymentApi } from '@/api/payment'
 
 function Payment() {
   const navigate = useNavigate()
   const [scenario, setScenario] = useState<'approve' | 'fail' | 'delay'>('approve')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [reservationId] = useState(() => localStorage.getItem('reservation_id') || '')
+
+  // 결제 인텐트 생성 뮤테이션
+  const createPaymentMutation = useMutation({
+    mutationFn: (data: { reservation_id: string; amount: number; scenario: 'approve' | 'fail' | 'delay' }) =>
+      paymentApi.createIntent({
+        ...data,
+        currency: 'KRW',
+      }),
+    onSuccess: (response) => {
+      console.log('✅ [PAYMENT] Payment intent created:', response)
+      // payment_intent_id 저장
+      localStorage.setItem('payment_intent_id', response.payment_intent_id)
+      
+      // 시나리오에 따른 처리
+      if (scenario === 'delay') {
+        console.log('⏳ [PAYMENT] Delay scenario - waiting for webhook...')
+        // 지연 시나리오: 웹훅 대기 시뮬레이션
+        setTimeout(() => {
+          navigate('/confirm')
+        }, 5000) // 5초 대기
+      } else if (scenario === 'fail') {
+        console.log('❌ [PAYMENT] Fail scenario - showing error')
+        alert('결제가 실패했습니다. 다시 시도해주세요.')
+      } else {
+        // approve: 즉시 확정 페이지로
+        navigate('/confirm')
+      }
+    },
+    onError: (error) => {
+      console.error('❌ [PAYMENT] Payment intent creation failed:', error)
+      alert('결제 처리에 실패했습니다. 다시 시도해주세요.')
+    },
+  })
 
   const handlePayment = async () => {
-    setIsProcessing(true)
-    try {
-      // TODO: 결제 API 호출
-      // const response = await paymentApi.create({
-      //   reservation_id: 'rsv_abc123',
-      //   amount: 120000,
-      //   scenario
-      // })
-
-      // 임시: 성공 가정
-      setTimeout(() => {
-        navigate('/confirm')
-      }, 2000)
-    } catch (error) {
-      console.error('결제 실패:', error)
-      setIsProcessing(false)
+    if (!reservationId) {
+      console.error('❌ No reservation ID')
+      alert('예약 정보가 없습니다. 처음부터 다시 시작해주세요.')
+      navigate('/')
+      return
     }
+
+    console.log('💳 [PAYMENT] Starting payment process:', {
+      reservation_id: reservationId,
+      amount: 120000,
+      scenario,
+    })
+
+    createPaymentMutation.mutate({
+      reservation_id: reservationId,
+      amount: 120000,
+      scenario,
+    })
   }
 
   return (
@@ -89,10 +125,10 @@ function Payment() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handlePayment}
-            disabled={isProcessing}
+            disabled={createPaymentMutation.isPending}
             className="btn btn-primary w-full text-lg py-4"
           >
-            {isProcessing ? (
+            {createPaymentMutation.isPending ? (
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>결제 처리 중...</span>
