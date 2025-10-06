@@ -52,15 +52,32 @@ function Reserve() {
     console.log('📋 [RESERVATION] quantity:', quantity)
     console.log('📋 [RESERVATION] localStorage.reservation_token:', localStorage.getItem('reservation_token'))
 
-    // 부하 테스트용: 토큰 없어도 fallback 토큰으로 시도
-    const tokenToUse = reservationToken || `rtkn_fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    if (!reservationToken) {
-      console.warn('⚠️ [RESERVATION] No reservation token, using fallback:', tokenToUse)
-      // alert 제거 - 부하 테스트용
+    // 로그인 여부 확인
+    const authToken = localStorage.getItem('auth_token')
+    console.log('🔑 [RESERVATION] Auth token exists:', !!authToken)
+
+    if (!authToken) {
+      console.warn('⚠️ [RESERVATION] No auth token - login required')
+      const shouldLogin = window.confirm(
+        '예약을 위해 로그인이 필요합니다.\n로그인 페이지로 이동하시겠습니까?'
+      )
+      if (shouldLogin) {
+        // 로그인 페이지로 이동 (현재 페이지 URL 저장)
+        localStorage.setItem('redirect_after_login', window.location.pathname)
+        navigate('/login')
+      }
+      return
     }
 
-    console.log('🎫 [RESERVATION] Creating reservation with token:', tokenToUse)
+    // 예약 토큰 확인
+    if (!reservationToken) {
+      console.error('❌ [RESERVATION] No reservation token')
+      alert('예약 토큰이 만료되었습니다. 대기열부터 다시 시작해주세요.')
+      navigate('/queue')
+      return
+    }
+
+    console.log('🎫 [RESERVATION] Creating reservation with token:', reservationToken)
 
     try {
       createReservationMutation.mutate({
