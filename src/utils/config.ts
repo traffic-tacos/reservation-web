@@ -194,14 +194,15 @@ export function getApiBaseUrl(): string {
 
 /**
  * API 모드별 prefix 설정을 반환합니다.
+ * ky 라이브러리의 prefixUrl과 함께 사용하므로 슬래시로 시작하지 않아야 합니다.
  */
 export function getApiPrefix(): string {
   const config = getConfig()
 
   switch (config.API_MODE) {
     case 'production':
-      return '/api/v1/reservations' // Route53에서 prefix routing
+      return 'api/v1/reservations' // 슬래시 제거 (ky prefixUrl 사용)
     default:
-      return '/api/v1/reservations'
+      return 'api/v1/reservations' // 슬래시 제거 (ky prefixUrl 사용)
   }
 }
