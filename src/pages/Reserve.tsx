@@ -1,27 +1,57 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Ticket, Clock } from 'lucide-react'
+import { reservationApi } from '@/api/reservation'
 
 function Reserve() {
   const navigate = useNavigate()
   const [quantity, setQuantity] = useState(1)
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [holdTimeLeft] = useState(60)
+  const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
+
+  // 예약 생성 뮤테이션
+  const createReservationMutation = useMutation({
+    mutationFn: (data: { event_id: string; seat_ids: string[]; quantity: number }) =>
+      reservationApi.create({
+        ...data,
+        reservation_token: reservationToken,
+        user_id: 'user_' + Date.now(), // 임시 user_id
+      }),
+    onSuccess: (response) => {
+      console.log('✅ [RESERVATION] Create success:', response)
+      // 예약 ID 저장
+      localStorage.setItem('reservation_id', response.reservation_id)
+      localStorage.setItem('hold_expires_at', response.hold_expires_at)
+      navigate('/payment')
+    },
+    onError: (error) => {
+      console.error('❌ [RESERVATION] Create failed:', error)
+      alert('예약에 실패했습니다. 다시 시도해주세요.')
+    },
+  })
 
   const handleReserve = async () => {
-    try {
-      // TODO: 예약 API 호출
-      // const response = await reservationApi.create({
-      //   event_id: 'evt_2025_1001',
-      //   seat_ids: selectedSeats,
-      //   quantity
-      // })
-
-      navigate('/payment')
-    } catch (error) {
-      console.error('예약 실패:', error)
+    if (!reservationToken) {
+      console.error('❌ No reservation token')
+      alert('예약 토큰이 없습니다. 대기열부터 다시 시작해주세요.')
+      navigate('/')
+      return
     }
+
+    console.log('🎫 [RESERVATION] Creating reservation:', {
+      event_id: 'evt_2025_1001',
+      seat_ids: selectedSeats,
+      quantity,
+    })
+
+    createReservationMutation.mutate({
+      event_id: 'evt_2025_1001',
+      seat_ids: selectedSeats,
+      quantity,
+    })
   }
 
   return (
@@ -103,10 +133,17 @@ function Reserve() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleReserve}
-            disabled={selectedSeats.length !== quantity}
+            disabled={selectedSeats.length !== quantity || createReservationMutation.isPending}
             className="btn btn-primary w-full text-lg py-4"
           >
-            예약하기 ({selectedSeats.length}/{quantity})
+            {createReservationMutation.isPending ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>예약 처리 중...</span>
+              </div>
+            ) : (
+              `예약하기 (${selectedSeats.length}/${quantity})`
+            )}
           </motion.button>
         </div>
       </motion.div>
