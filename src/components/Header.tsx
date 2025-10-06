@@ -3,16 +3,27 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { LogIn, LogOut, User } from 'lucide-react'
 import { ApiModeToggle } from './dev/ApiModeToggle'
+import { clearAuthData, getCurrentUser } from '@/api/auth'
 
 function Header() {
   const navigate = useNavigate()
-  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
 
   // 로그인 상태 확인
   useEffect(() => {
     const checkAuth = () => {
-      const email = localStorage.getItem('user_email') || sessionStorage.getItem('user_email')
-      setUserEmail(email)
+      const user = getCurrentUser()
+      if (user) {
+        setDisplayName(user.display_name || user.username)
+      } else {
+        // Legacy: 기존 게스트 세션 확인
+        const guestEmail = sessionStorage.getItem('user_email')
+        if (guestEmail) {
+          setDisplayName(guestEmail)
+        } else {
+          setDisplayName(null)
+        }
+      }
     }
 
     checkAuth()
@@ -28,11 +39,13 @@ function Header() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_email')
-    sessionStorage.removeItem('auth_token')
+    // 새로운 Auth API 방식의 데이터 제거
+    clearAuthData()
+    
+    // Legacy 게스트 데이터도 제거
     sessionStorage.removeItem('user_email')
-    setUserEmail(null)
+    
+    setDisplayName(null)
     window.dispatchEvent(new Event('auth-changed'))
     navigate('/')
   }
@@ -62,11 +75,11 @@ function Header() {
             <ApiModeToggle variant="inline" />
 
             {/* 로그인/로그아웃 버튼 */}
-            {userEmail ? (
+            {displayName ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <User size={16} />
-                  <span>{userEmail}</span>
+                  <span>{displayName}</span>
                 </div>
                 <button
                   onClick={handleLogout}

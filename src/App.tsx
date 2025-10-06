@@ -11,6 +11,7 @@ const Reserve = lazy(() => import('./pages/Reserve'))
 const Payment = lazy(() => import('./pages/Payment'))
 const Confirm = lazy(() => import('./pages/Confirm'))
 const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
 
 function App() {
   const [configLoaded, setConfigLoaded] = useState(false)
@@ -65,6 +66,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/reserve" element={<Reserve />} />
           <Route path="/payment" element={<Payment />} />

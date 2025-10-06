@@ -1,64 +1,49 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { LogIn } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import { authApi, saveAuthData } from '@/api/auth'
 
-function Login() {
+function Register() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    email: '',
+    display_name: '',
+  })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
     try {
-      // 실제 로그인 API 호출
-      const response = await authApi.login({ username, password })
+      // 실제 회원가입 API 호출
+      const response = await authApi.register(formData)
       
-      // 인증 정보 저장 (localStorage - 영구 보존)
+      // 인증 정보 저장 (회원가입 후 자동 로그인)
       saveAuthData(response)
 
-      console.log('✅ [LOGIN] Login success - user_id:', response.user_id)
+      console.log('✅ [REGISTER] Register success - user_id:', response.user_id)
       
       // 로그인 상태 변경 이벤트 발생
       window.dispatchEvent(new Event('auth-changed'))
 
-      // 로그인 후 리다이렉트
+      // 회원가입 후 리다이렉트
       const redirectPath = localStorage.getItem('redirect_after_login') || '/queue'
       localStorage.removeItem('redirect_after_login')
       
       navigate(redirectPath)
     } catch (err) {
-      console.error('❌ [LOGIN] Login failed:', err)
-      const errorMessage = err instanceof Error ? err.message : '로그인에 실패했습니다. 다시 시도해주세요.'
+      console.error('❌ [REGISTER] Register failed:', err)
+      const errorMessage = err instanceof Error ? err.message : '회원가입에 실패했습니다. 다시 시도해주세요.'
       setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleGuestLogin = () => {
-    // 게스트 로그인은 sessionStorage에 저장 (창 닫으면 삭제)
-    const guestToken = `guest-${Date.now()}`
-    
-    sessionStorage.setItem('auth_token', guestToken)
-    sessionStorage.setItem('user_email', 'guest@traffictacos.store')
-
-    console.log('✅ [LOGIN] Guest login success (session only):', guestToken)
-    console.warn('⚠️ [LOGIN] Guest token will be cleared when browser is closed')
-    
-    // 로그인 상태 변경 이벤트 발생
-    window.dispatchEvent(new Event('auth-changed'))
-
-    const redirectPath = localStorage.getItem('redirect_after_login') || '/queue'
-    localStorage.removeItem('redirect_after_login')
-    
-    navigate(redirectPath)
   }
 
   return (
@@ -70,45 +55,80 @@ function Login() {
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-8 h-8 text-primary-600" />
+            <UserPlus className="w-8 h-8 text-primary-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            로그인
+            회원가입
           </h1>
           <p className="text-gray-600">
-            예약을 위해 로그인이 필요합니다
+            Traffic Tacos에 오신 것을 환영합니다
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="label">사용자명</label>
+            <label className="label">
+              사용자명 <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="user01"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              placeholder="3-20자, 영문과 숫자만 사용"
               className="input"
               required
               minLength={3}
               maxLength={20}
+              pattern="[a-zA-Z0-9]+"
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 mt-1">
-              테스트 계정: user01~user10 / pwd01~pwd10
+              로그인 시 사용할 사용자명입니다.
             </p>
           </div>
 
           <div>
-            <label className="label">비밀번호</label>
+            <label className="label">
+              비밀번호 <span className="text-red-500">*</span>
+            </label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호를 입력하세요"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="최소 6자 이상"
               className="input"
               required
               minLength={6}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label className="label">
+              이메일 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="example@email.com"
+              className="input"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label className="label">
+              이름 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.display_name}
+              onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+              placeholder="화면에 표시될 이름"
+              className="input"
+              required
               disabled={isLoading}
             />
           </div>
@@ -129,40 +149,20 @@ function Login() {
             {isLoading ? (
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>로그인 중...</span>
+                <span>회원가입 중...</span>
               </div>
             ) : (
-              '로그인'
+              '회원가입'
             )}
           </motion.button>
         </form>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">또는</span>
-            </div>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGuestLogin}
-            className="btn btn-secondary w-full mt-6"
-          >
-            게스트로 계속하기
-          </motion.button>
-        </div>
-
         <div className="mt-6 text-center space-y-2">
           <button
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/login')}
             className="text-sm text-primary-600 hover:text-primary-800 font-medium"
           >
-            계정이 없으신가요? 회원가입
+            이미 계정이 있으신가요? 로그인
           </button>
           <div>
             <button
@@ -178,5 +178,5 @@ function Login() {
   )
 }
 
-export default Login
+export default Register
 

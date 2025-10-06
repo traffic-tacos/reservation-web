@@ -54,13 +54,23 @@ function createApiClient() {
     beforeRequest: [
       (request) => {
         // Authorization 헤더 추가 (JWT 토큰이 있을 때만)
-        // localStorage (실제 로그인) 또는 sessionStorage (게스트) 확인
-        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+        // 1. 실제 JWT 토큰 (localStorage - Auth API 로그인)
+        // 2. 게스트 토큰 (sessionStorage - 임시)
+        const jwtToken = localStorage.getItem('auth_token')
+        const guestToken = sessionStorage.getItem('auth_token')
+        
+        const token = jwtToken || guestToken
 
         if (token) {
-          const tokenType = token.startsWith('guest-') ? 'Guest' : 'JWT'
-          const storage = localStorage.getItem('auth_token') ? 'localStorage' : 'sessionStorage'
-          console.log(`🔑 [AUTH] Using ${tokenType} token from ${storage}`)
+          // 토큰 타입 판별
+          let tokenType = 'Unknown'
+          if (jwtToken) {
+            tokenType = 'JWT (Real Login)'
+          } else if (guestToken && guestToken.startsWith('guest-')) {
+            tokenType = 'Guest (Session)'
+          }
+          
+          console.log(`🔑 [AUTH] Using ${tokenType} token`)
           request.headers.set('Authorization', `Bearer ${token}`)
         } else {
           console.log('🔓 [AUTH] No token - proceeding without Authorization header')
