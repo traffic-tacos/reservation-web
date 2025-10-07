@@ -101,6 +101,26 @@ function Reserve() {
     }
   }
 
+  // 🚪 브라우저 닫기/새로고침 시 예약 토큰 만료 처리
+  useEffect(() => {
+    if (!reservationToken) return
+
+    const handleBeforeUnload = () => {
+      console.log('🚪 [RESERVE] Browser closing/refreshing - reservation token will expire')
+      
+      // TODO: 백엔드에 예약 취소 API 추가 시 구현
+      // const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://api.traffictacos.store'
+      // const url = `${apiBase}/api/v1/queue/cancel-reservation?token=${encodeURIComponent(reservationToken)}`
+      // navigator.sendBeacon(url)
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [reservationToken])
+
   return (
     <div className="max-w-2xl mx-auto">
       <motion.div
