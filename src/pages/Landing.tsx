@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
@@ -9,6 +9,35 @@ import { mockEvents } from '@/data/mockData'
 function Landing() {
   const navigate = useNavigate()
   const [selectedEvent, setSelectedEvent] = useState('')
+  const [typedText, setTypedText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  const fullText = 'Traffic Tacos와 함께 특별한 순간을 예매하세요. 대기열 시스템으로 공정한 예매 기회를 제공합니다.'
+  
+  // 타이핑 애니메이션 효과
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+
+    if (!isDeleting && typedText === fullText) {
+      // 전체 텍스트 완성 후 3초 대기
+      timeout = setTimeout(() => setIsDeleting(true), 3000)
+    } else if (isDeleting && typedText === '') {
+      // 삭제 완료 후 0.5초 대기 후 다시 타이핑 시작
+      timeout = setTimeout(() => setIsDeleting(false), 500)
+    } else if (isDeleting) {
+      // 삭제 중 (빠르게 - 30ms)
+      timeout = setTimeout(() => {
+        setTypedText(fullText.slice(0, typedText.length - 1))
+      }, 30)
+    } else {
+      // 타이핑 중 (천천히 - 80ms)
+      timeout = setTimeout(() => {
+        setTypedText(fullText.slice(0, typedText.length + 1))
+      }, 80)
+    }
+
+    return () => clearTimeout(timeout)
+  }, [typedText, isDeleting, fullText])
 
   const events = mockEvents.map(event => ({
     id: event.id,
@@ -56,10 +85,12 @@ function Landing() {
           <br />
           <span className="text-primary-600">티켓 예매</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Traffic Tacos와 함께 특별한 순간을 예매하세요.
-          대기열 시스템으로 공정한 예매 기회를 제공합니다.
-        </p>
+        <div className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto min-h-[4rem] flex items-center justify-center">
+          <p className="inline-block">
+            {typedText}
+            <span className="inline-block w-0.5 h-6 bg-primary-600 ml-1 animate-pulse"></span>
+          </p>
+        </div>
       </motion.div>
 
       {/* 특징 카드 */}
