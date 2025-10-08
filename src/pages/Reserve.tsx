@@ -11,7 +11,7 @@ function Reserve() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [holdTimeLeft, setHoldTimeLeft] = useState(180) // 3분 = 180초
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
-  const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F'>('1F')
+  const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F' | '7F' | '8F' | '9F'>('1F')
   const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
   const [initialZoom, setInitialZoom] = useState<number | null>(null) // 초기 줌 레벨 저장
 
@@ -195,32 +195,38 @@ function Reserve() {
     }
   }, [])
 
-  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 가로 통로 2줄)
+  // 층별 좌석 배치 생성 (9층, 돔 형태: 중앙 고정 + 양옆 증가)
   // 총 10,000석 목표: 각 층별 좌석 수 계산됨
-  const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
+  const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F' | '7F' | '8F' | '9F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 20, baseSeats: 90, prefix: 'VIP', aisleRows: [6, 7, 14, 15] },
-      '2F': { name: 'R석', color: 'blue', rows: 22, baseSeats: 100, prefix: 'R', aisleRows: [7, 8, 15, 16] },
-      '3F': { name: 'S석', color: 'green', rows: 25, baseSeats: 110, prefix: 'S', aisleRows: [8, 9, 17, 18] },
-      '4F': { name: 'A석', color: 'orange', rows: 28, baseSeats: 120, prefix: 'A', aisleRows: [9, 10, 19, 20] },
-      '5F': { name: 'B석', color: 'red', rows: 30, baseSeats: 130, prefix: 'B', aisleRows: [10, 11, 20, 21] },
-      '6F': { name: 'C석', color: 'gray', rows: 35, baseSeats: 140, prefix: 'C', aisleRows: [11, 12, 23, 24] },
+      '1F': { name: 'VIP석', color: 'purple', rows: 15, centerSeats: 10, prefix: 'VIP', aisleRows: [5, 6, 10, 11] },
+      '2F': { name: 'R석', color: 'blue', rows: 16, centerSeats: 10, prefix: 'R', aisleRows: [5, 6, 11, 12] },
+      '3F': { name: 'S석', color: 'green', rows: 17, centerSeats: 10, prefix: 'S', aisleRows: [6, 7, 11, 12] },
+      '4F': { name: 'A석', color: 'orange', rows: 18, centerSeats: 10, prefix: 'A', aisleRows: [6, 7, 12, 13] },
+      '5F': { name: 'B석', color: 'red', rows: 19, centerSeats: 10, prefix: 'B', aisleRows: [6, 7, 13, 14] },
+      '6F': { name: 'C석', color: 'gray', rows: 20, centerSeats: 10, prefix: 'C', aisleRows: [7, 8, 13, 14] },
+      '7F': { name: 'D석', color: 'indigo', rows: 21, centerSeats: 10, prefix: 'D', aisleRows: [7, 8, 14, 15] },
+      '8F': { name: 'E석', color: 'pink', rows: 22, centerSeats: 10, prefix: 'E', aisleRows: [7, 8, 15, 16] },
+      '9F': { name: 'F석', color: 'teal', rows: 23, centerSeats: 10, prefix: 'F', aisleRows: [8, 9, 15, 16] },
     }
 
     const config = floorConfig[floor]
     const seats = []
 
     for (let row = 1; row <= config.rows; row++) {
-      // 돔 곡선 계산: 앞쪽(1행)은 좁고, 뒤쪽(마지막 행)은 넓음
-      const curveFactor = 0.6 + (row / config.rows) * 0.4 // 0.6 ~ 1.0
-      const seatsInRow = Math.floor(config.baseSeats * curveFactor)
+      // 돔 형태: 중앙은 고정, 양옆으로 증가
+      // 앞쪽(1행)은 양옆이 좁고, 뒤쪽(마지막 행)은 양옆이 넓음
+      const sideIncrease = Math.floor((row / config.rows) * 10) // 0 ~ 10 증가
+      const totalSeats = config.centerSeats + (sideIncrease * 2) // 양쪽에 동일하게 증가
       
       // 통로 여부 확인
       const isAisle = config.aisleRows.includes(row)
       
       seats.push({
         row,
-        count: seatsInRow,
+        count: totalSeats,
+        centerSeats: config.centerSeats,
+        sideSeats: sideIncrease,
         config,
         isAisle
       })
@@ -237,6 +243,9 @@ function Reserve() {
     '4F': { name: 'A석', color: 'orange', emoji: '🎪', gradient: 'from-orange-500 to-orange-700' },
     '5F': { name: 'B석', color: 'red', emoji: '🎭', gradient: 'from-red-500 to-red-700' },
     '6F': { name: 'C석', color: 'gray', emoji: '🎬', gradient: 'from-gray-500 to-gray-700' },
+    '7F': { name: 'D석', color: 'indigo', emoji: '🎨', gradient: 'from-indigo-500 to-indigo-700' },
+    '8F': { name: 'E석', color: 'pink', emoji: '🎀', gradient: 'from-pink-500 to-pink-700' },
+    '9F': { name: 'F석', color: 'teal', emoji: '🎯', gradient: 'from-teal-500 to-teal-700' },
   }[selectedFloor]
 
   return (
@@ -309,7 +318,7 @@ function Reserve() {
         className="card mb-6"
       >
         <div className="grid grid-cols-3 gap-2">
-          {(['1F', '2F', '3F', '4F', '5F', '6F'] as const).map((floor) => {
+          {(['1F', '2F', '3F', '4F', '5F', '6F', '7F', '8F', '9F'] as const).map((floor) => {
             const config = {
               '1F': { name: 'VIP석', emoji: '💎', color: 'purple', prefix: 'VIP' },
               '2F': { name: 'R석', emoji: '🎫', color: 'blue', prefix: 'R' },
@@ -317,6 +326,9 @@ function Reserve() {
               '4F': { name: 'A석', emoji: '🎪', color: 'orange', prefix: 'A' },
               '5F': { name: 'B석', emoji: '🎭', color: 'red', prefix: 'B' },
               '6F': { name: 'C석', emoji: '🎬', color: 'gray', prefix: 'C' },
+              '7F': { name: 'D석', emoji: '🎨', color: 'indigo', prefix: 'D' },
+              '8F': { name: 'E석', emoji: '🎀', color: 'pink', prefix: 'E' },
+              '9F': { name: 'F석', emoji: '🎯', color: 'teal', prefix: 'F' },
             }[floor]
 
             // 해당 층에서 선택된 좌석 개수 계산
@@ -330,6 +342,9 @@ function Reserve() {
               orange: isActive ? 'bg-orange-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-orange-100',
               red: isActive ? 'bg-red-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-red-100',
               gray: isActive ? 'bg-gray-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+              indigo: isActive ? 'bg-indigo-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-indigo-100',
+              pink: isActive ? 'bg-pink-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-pink-100',
+              teal: isActive ? 'bg-teal-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-teal-100',
             }[config.color]
 
             return (
@@ -472,6 +487,9 @@ function Reserve() {
                     orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
                     red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
                     gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
+                    indigo: isSelected ? 'bg-violet-500 ring-4 ring-violet-300 shadow-lg' : 'bg-indigo-500 hover:bg-indigo-600 hover:shadow-lg',
+                    pink: isSelected ? 'bg-fuchsia-500 ring-4 ring-fuchsia-300 shadow-lg' : 'bg-pink-500 hover:bg-pink-600 hover:shadow-lg',
+                    teal: isSelected ? 'bg-emerald-500 ring-4 ring-emerald-300 shadow-lg' : 'bg-teal-500 hover:bg-teal-600 hover:shadow-lg',
                   }[config.color]
 
                   return (
