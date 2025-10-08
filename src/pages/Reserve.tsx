@@ -195,15 +195,15 @@ function Reserve() {
     }
   }, [])
 
-  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 통로 2줄)
+  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 가로 통로 2줄)
   const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP', aisleRows: [5, 6] },
-      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R', aisleRows: [6, 7] },
-      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 40, prefix: 'S', aisleRows: [7, 8] },
-      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [9, 10] },
-      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 50, prefix: 'B', aisleRows: [10, 11] },
-      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 55, prefix: 'C', aisleRows: [12, 13] },
+      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 45, prefix: 'VIP', aisleRows: [3, 4, 7, 8] },
+      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 45, prefix: 'R', aisleRows: [4, 5, 8, 9] },
+      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 45, prefix: 'S', aisleRows: [5, 6, 10, 11] },
+      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [6, 7, 12, 13] },
+      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 45, prefix: 'B', aisleRows: [7, 8, 13, 14] },
+      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 45, prefix: 'C', aisleRows: [8, 9, 17, 18] },
     }
 
     const config = floorConfig[floor]
@@ -447,18 +447,18 @@ function Reserve() {
                 )
               }
 
-              // 중앙 정렬을 위한 패딩 계산
-              const maxSeats = config.baseSeats
-              const paddingSeats = Math.floor((maxSeats - count) / 2)
+              // 좌석을 3x3 그리드로 9등분 (정사각형 배치)
               const seatSize = 20 // 좌석 크기 (20px)
               const seatGap = 4 // 좌석 간격 (4px)
-
-              // 좌석을 4개 블록으로 나누기 (통로 2개)
-              const quarterSeats = Math.floor(count / 4)
-              const block1 = quarterSeats // 좌측 1/4
-              const block2 = quarterSeats // 좌측 2/4
-              const block3 = quarterSeats // 우측 3/4
-              const block4 = count - (block1 + block2 + block3) // 우측 4/4 (나머지)
+              const aisleGap = 24 // 통로 간격 (24px)
+              
+              // 9등분: 각 블록당 좌석 수
+              const seatsPerBlock = Math.floor(count / 9)
+              const blocks = [
+                seatsPerBlock, seatsPerBlock, seatsPerBlock, // 좌측 3블록
+                seatsPerBlock, seatsPerBlock, seatsPerBlock, // 중앙 3블록
+                seatsPerBlock, seatsPerBlock, count - (seatsPerBlock * 8) // 우측 3블록 (마지막에 나머지)
+              ]
 
               const renderSeatBlock = (start: number, length: number) => {
                 return Array.from({ length }, (_, idx) => {
@@ -486,53 +486,57 @@ function Reserve() {
                 })
               }
 
+              let seatOffset = 0
+
               return (
-                <div key={`${config.prefix}-${row}`} className="flex items-center justify-center space-x-2">
+                <div key={`${config.prefix}-${row}`} className="flex items-center justify-center gap-2">
                   {/* 행 번호 */}
                   <span className="text-sm text-gray-600 w-14 text-right font-bold">
                     {row}행
                   </span>
 
-                  {/* 좌측 패딩 */}
-                  <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
-
-                  {/* 좌측 블록 1 */}
+                  {/* 좌측 3블록 */}
                   <div className="flex gap-1">
-                    {renderSeatBlock(0, block1)}
+                    {renderSeatBlock(seatOffset, blocks[0])}
                   </div>
-
-                  {/* 통로 1 */}
-                  <div className="w-6 h-5 flex items-center justify-center">
-                    <div className="w-0.5 h-full bg-gray-300"></div>
-                  </div>
-
-                  {/* 좌측 블록 2 */}
                   <div className="flex gap-1">
-                    {renderSeatBlock(block1, block2)}
+                    {renderSeatBlock(seatOffset += blocks[0], blocks[1])}
+                  </div>
+                  <div className="flex gap-1">
+                    {renderSeatBlock(seatOffset += blocks[1], blocks[2])}
                   </div>
 
-                  {/* 중앙 통로 (더 넓게) */}
-                  <div className="w-10 h-5 flex items-center justify-center">
+                  {/* 세로 통로 1 (좌측-중앙 사이) */}
+                  <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
                     <div className="w-1 h-full bg-gray-400"></div>
                   </div>
 
-                  {/* 우측 블록 3 */}
+                  {/* 중앙 3블록 */}
                   <div className="flex gap-1">
-                    {renderSeatBlock(block1 + block2, block3)}
+                    {renderSeatBlock(seatOffset += blocks[2], blocks[3])}
                   </div>
-
-                  {/* 통로 2 */}
-                  <div className="w-6 h-5 flex items-center justify-center">
-                    <div className="w-0.5 h-full bg-gray-300"></div>
-                  </div>
-
-                  {/* 우측 블록 4 */}
                   <div className="flex gap-1">
-                    {renderSeatBlock(block1 + block2 + block3, block4)}
+                    {renderSeatBlock(seatOffset += blocks[3], blocks[4])}
+                  </div>
+                  <div className="flex gap-1">
+                    {renderSeatBlock(seatOffset += blocks[4], blocks[5])}
                   </div>
 
-                  {/* 우측 패딩 */}
-                  <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
+                  {/* 세로 통로 2 (중앙-우측 사이) */}
+                  <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
+                    <div className="w-1 h-full bg-gray-400"></div>
+                  </div>
+
+                  {/* 우측 3블록 */}
+                  <div className="flex gap-1">
+                    {renderSeatBlock(seatOffset += blocks[5], blocks[6])}
+                  </div>
+                  <div className="flex gap-1">
+                    {renderSeatBlock(seatOffset += blocks[6], blocks[7])}
+                  </div>
+                  <div className="flex gap-1">
+                    {renderSeatBlock(seatOffset += blocks[7], blocks[8])}
+                  </div>
                 </div>
               )
             })}
