@@ -19,21 +19,21 @@ function Landing() {
     let timeout: ReturnType<typeof setTimeout>
 
     if (!isDeleting && typedText === fullText) {
-      // 전체 텍스트 완성 후 3초 대기
-      timeout = setTimeout(() => setIsDeleting(true), 3000)
+      // 전체 텍스트 완성 후 2초 대기
+      timeout = setTimeout(() => setIsDeleting(true), 2000)
     } else if (isDeleting && typedText === '') {
-      // 삭제 완료 후 0.5초 대기 후 다시 타이핑 시작
-      timeout = setTimeout(() => setIsDeleting(false), 500)
+      // 삭제 완료 후 0.3초 대기 후 다시 타이핑 시작
+      timeout = setTimeout(() => setIsDeleting(false), 300)
     } else if (isDeleting) {
-      // 삭제 중 (빠르게 - 30ms)
+      // 삭제 중 (빠르게 - 20ms)
       timeout = setTimeout(() => {
         setTypedText(fullText.slice(0, typedText.length - 1))
-      }, 30)
+      }, 20)
     } else {
-      // 타이핑 중 (천천히 - 80ms)
+      // 타이핑 중 (빠르게 - 50ms)
       timeout = setTimeout(() => {
         setTypedText(fullText.slice(0, typedText.length + 1))
-      }, 80)
+      }, 50)
     }
 
     return () => clearTimeout(timeout)
