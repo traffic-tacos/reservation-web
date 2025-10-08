@@ -12,7 +12,7 @@ function Reserve() {
   const [holdTimeLeft, setHoldTimeLeft] = useState(180) // 3분 = 180초
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
   const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F'>('1F')
-  const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
+  const [zoomLevel, setZoomLevel] = useState(0.8) // 확대/축소 레벨 (기본값 0.8 = 80%)
 
   // 3분 카운트다운 타이머
   useEffect(() => {
@@ -164,15 +164,15 @@ function Reserve() {
     }
   }, [])
 
-  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선)
+  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 통로)
   const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP' },
-      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R' },
-      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 40, prefix: 'S' },
-      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A' },
-      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 50, prefix: 'B' },
-      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 55, prefix: 'C' },
+      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP', aisleRows: [5] },
+      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R', aisleRows: [6] },
+      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 40, prefix: 'S', aisleRows: [7, 8] },
+      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [9] },
+      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 50, prefix: 'B', aisleRows: [10, 11] },
+      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 55, prefix: 'C', aisleRows: [12, 13] },
     }
 
     const config = floorConfig[floor]
@@ -183,10 +183,14 @@ function Reserve() {
       const curveFactor = 0.6 + (row / config.rows) * 0.4 // 0.6 ~ 1.0
       const seatsInRow = Math.floor(config.baseSeats * curveFactor)
       
+      // 통로 여부 확인
+      const isAisle = config.aisleRows.includes(row)
+      
       seats.push({
         row,
         count: seatsInRow,
-        config
+        config,
+        isAisle
       })
     }
 
@@ -321,14 +325,49 @@ function Reserve() {
         className="card"
       >
         {/* 스테이지 */}
-        <div className="mb-8 text-center">
+        <div className="mb-8">
           <div className="relative">
-            <div className={`bg-gradient-to-r ${floorConfig.gradient} text-white py-6 rounded-3xl shadow-2xl`}>
-              <p className="text-2xl font-bold">🎤 STAGE 🎤</p>
-              <p className="text-sm mt-1 opacity-80">{floorConfig.emoji} {floorConfig.name} - {selectedFloor}</p>
+            {/* 스테이지 배경 */}
+            <div className={`bg-gradient-to-r ${floorConfig.gradient} text-white rounded-3xl shadow-2xl overflow-hidden`}>
+              {/* 스테이지 장비 및 조명 */}
+              <div className="relative h-32 flex items-center justify-center">
+                {/* 조명 트러스 */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-gray-800"></div>
+                <div className="absolute top-2 left-10 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                <div className="absolute top-2 left-1/4 w-3 h-3 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                <div className="absolute top-2 left-1/2 w-3 h-3 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                <div className="absolute top-2 left-3/4 w-3 h-3 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.9s' }}></div>
+                <div className="absolute top-2 right-10 w-3 h-3 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+                
+                {/* 메인 스테이지 */}
+                <div className="z-10 text-center">
+                  <p className="text-3xl font-bold mb-2">🎤 STAGE 🎤</p>
+                  <p className="text-sm opacity-90">{floorConfig.emoji} {floorConfig.name} - {selectedFloor}</p>
+                </div>
+
+                {/* 스피커 */}
+                <div className="absolute bottom-4 left-8">
+                  <div className="w-6 h-12 bg-gray-800 rounded border border-gray-600 flex flex-col justify-around p-1">
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 right-8">
+                  <div className="w-6 h-12 bg-gray-800 rounded border border-gray-600 flex flex-col justify-around p-1">
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                    <div className="w-full h-2 bg-gray-700 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* 모니터 */}
+                <div className="absolute bottom-2 left-1/3 w-8 h-4 bg-gray-700 border border-gray-500 transform -rotate-12"></div>
+                <div className="absolute bottom-2 right-1/3 w-8 h-4 bg-gray-700 border border-gray-500 transform rotate-12"></div>
+              </div>
             </div>
             {/* 스테이지 조명 효과 */}
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-3/4 h-8 bg-gradient-to-b from-yellow-200/50 to-transparent blur-xl"></div>
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-3/4 h-12 bg-gradient-to-b from-yellow-200/50 to-transparent blur-xl"></div>
           </div>
         </div>
 
@@ -353,12 +392,29 @@ function Reserve() {
               transition: 'transform 0.2s ease-out'
             }}
           >
-            {currentFloorSeats.map(({ row, count, config }) => {
+            {currentFloorSeats.map(({ row, count, config, isAisle }) => {
+              // 통로인 경우 통로 표시
+              if (isAisle) {
+                return (
+                  <div key={`${config.prefix}-aisle-${row}`} className="flex items-center justify-center py-2">
+                    <div className="w-full border-t-2 border-dashed border-gray-400 relative">
+                      <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 px-3 py-1 text-xs text-gray-500 font-medium rounded-full">
+                        🚶 통로 {row}
+                      </span>
+                    </div>
+                  </div>
+                )
+              }
+
               // 중앙 정렬을 위한 패딩 계산
               const maxSeats = config.baseSeats
               const paddingSeats = Math.floor((maxSeats - count) / 2)
               const seatSize = 20 // 좌석 크기 (20px)
               const seatGap = 4 // 좌석 간격 (4px)
+
+              // 좌석을 좌/우 블록으로 나누기 (중앙 통로)
+              const leftSeats = Math.floor(count / 2)
+              const rightSeats = count - leftSeats
 
               return (
                 <div key={`${config.prefix}-${row}`} className="flex items-center justify-center space-x-2">
@@ -370,10 +426,42 @@ function Reserve() {
                   {/* 좌측 패딩 */}
                   <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
 
-                  {/* 좌석 버튼들 */}
+                  {/* 좌측 블록 */}
                   <div className="flex gap-1">
-                    {Array.from({ length: count }, (_, seatIdx) => {
+                    {Array.from({ length: leftSeats }, (_, seatIdx) => {
                       const seatId = `${config.prefix}-${row}-${seatIdx + 1}`
+                      const isSelected = selectedSeats.includes(seatId)
+                      
+                      const colorClasses = {
+                        purple: isSelected ? 'bg-pink-500 ring-4 ring-pink-300 shadow-lg' : 'bg-purple-500 hover:bg-purple-600 hover:shadow-lg',
+                        blue: isSelected ? 'bg-cyan-500 ring-4 ring-cyan-300 shadow-lg' : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg',
+                        green: isSelected ? 'bg-lime-500 ring-4 ring-lime-300 shadow-lg' : 'bg-green-500 hover:bg-green-600 hover:shadow-lg',
+                        orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
+                        red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
+                        gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
+                      }[config.color]
+
+                      return (
+                        <button
+                          key={seatId}
+                          onClick={() => handleSeatClick(seatId)}
+                          className={`rounded-lg transition-all transform hover:scale-125 ${colorClasses}`}
+                          style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
+                          title={seatId}
+                        />
+                      )
+                    })}
+                  </div>
+
+                  {/* 중앙 통로 */}
+                  <div className="w-8 h-5 flex items-center justify-center">
+                    <div className="w-px h-full bg-gray-300"></div>
+                  </div>
+
+                  {/* 우측 블록 */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: rightSeats }, (_, seatIdx) => {
+                      const seatId = `${config.prefix}-${row}-${leftSeats + seatIdx + 1}`
                       const isSelected = selectedSeats.includes(seatId)
                       
                       const colorClasses = {
