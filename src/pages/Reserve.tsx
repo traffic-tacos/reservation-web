@@ -450,15 +450,11 @@ function Reserve() {
             }}
           >
             {currentFloorSeats.map(({ row, count, config, isAisle }) => {
-              // 통로인 경우 통로 표시
+              // 통로인 경우 빈 줄만 표시 (텍스트 제거)
               if (isAisle) {
                 return (
-                  <div key={`${config.prefix}-aisle-${row}`} className="flex items-center justify-center py-2">
-                    <div className="w-full border-t-2 border-dashed border-gray-400 relative">
-                      <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 px-3 py-1 text-xs text-gray-500 font-medium rounded-full">
-                        🚶 통로 {row}
-                      </span>
-                    </div>
+                  <div key={`${config.prefix}-aisle-${row}`} className="h-4">
+                    {/* 빈 통로 공간 */}
                   </div>
                 )
               }
@@ -507,54 +503,57 @@ function Reserve() {
               let seatOffset = 0
 
               return (
-                <div key={`${config.prefix}-${row}`} className="flex items-center justify-center gap-2">
-                  {/* 행 번호 */}
-                  <span className="text-sm text-gray-600 w-14 text-right font-bold">
+                <div key={`${config.prefix}-${row}`} className="flex items-center gap-2">
+                  {/* 좌석 블록들을 먼저 배치 */}
+                  <div className="flex items-center justify-center gap-2">
+                    {/* 좌측 3블록 */}
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset, blocks[0])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[0], blocks[1])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[1], blocks[2])}
+                    </div>
+
+                    {/* 세로 통로 1 (좌측-중앙 사이) */}
+                    <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
+                      <div className="w-1 h-full bg-gray-400"></div>
+                    </div>
+
+                    {/* 중앙 3블록 */}
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[2], blocks[3])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[3], blocks[4])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[4], blocks[5])}
+                    </div>
+
+                    {/* 세로 통로 2 (중앙-우측 사이) */}
+                    <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
+                      <div className="w-1 h-full bg-gray-400"></div>
+                    </div>
+
+                    {/* 우측 3블록 */}
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[5], blocks[6])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[6], blocks[7])}
+                    </div>
+                    <div className="flex gap-1">
+                      {renderSeatBlock(seatOffset += blocks[7], blocks[8])}
+                    </div>
+                  </div>
+
+                  {/* 행 번호를 오른쪽에 배치 */}
+                  <span className="text-sm text-gray-600 w-14 text-left font-bold ml-4">
                     {row}행
                   </span>
-
-                  {/* 좌측 3블록 */}
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset, blocks[0])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[0], blocks[1])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[1], blocks[2])}
-                  </div>
-
-                  {/* 세로 통로 1 (좌측-중앙 사이) */}
-                  <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
-                    <div className="w-1 h-full bg-gray-400"></div>
-                  </div>
-
-                  {/* 중앙 3블록 */}
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[2], blocks[3])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[3], blocks[4])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[4], blocks[5])}
-                  </div>
-
-                  {/* 세로 통로 2 (중앙-우측 사이) */}
-                  <div style={{ width: `${aisleGap}px` }} className="h-5 flex items-center justify-center">
-                    <div className="w-1 h-full bg-gray-400"></div>
-                  </div>
-
-                  {/* 우측 3블록 */}
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[5], blocks[6])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[6], blocks[7])}
-                  </div>
-                  <div className="flex gap-1">
-                    {renderSeatBlock(seatOffset += blocks[7], blocks[8])}
-                  </div>
                 </div>
               )
             })}
