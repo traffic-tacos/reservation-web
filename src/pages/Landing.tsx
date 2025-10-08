@@ -39,10 +39,24 @@ function Landing() {
     return () => clearTimeout(timeout)
   }, [typedText, isDeleting, fullText])
 
+  // D-Day 계산 함수
+  const calculateDDay = (dateString: string): number => {
+    const eventDate = new Date(dateString)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+    
+    const diffTime = eventDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    return diffDays
+  }
+
   const events = mockEvents.map(event => ({
     id: event.id,
     name: event.name,
     date: event.date,
+    dDay: calculateDDay(event.date),
   }))
 
   const joinQueueMutation = useMutation({
@@ -190,15 +204,28 @@ function Landing() {
                       {event.date}
                     </p>
                   </div>
-                  {selectedEvent === event.id && (
-                    <div className="flex-shrink-0 ml-4">
+                  <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
+                    {/* D-Day 배지 */}
+                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      event.dDay === 0 
+                        ? 'bg-red-500 text-white animate-pulse' 
+                        : event.dDay < 0
+                        ? 'bg-gray-400 text-white'
+                        : event.dDay <= 7
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-blue-500 text-white'
+                    }`}>
+                      {event.dDay === 0 ? 'D-Day' : event.dDay < 0 ? '종료' : `D-${event.dDay}`}
+                    </div>
+                    {/* 선택 체크 아이콘 */}
+                    {selectedEvent === event.id && (
                       <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </motion.button>
             ))}
