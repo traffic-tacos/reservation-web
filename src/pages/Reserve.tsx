@@ -511,9 +511,9 @@ function Reserve() {
               let seatOffset = 0
 
               return (
-                <div key={`${config.prefix}-${row}`} className="flex items-center gap-2">
-                  {/* 좌석 블록들을 먼저 배치 */}
-                  <div className="flex items-center justify-center gap-2">
+                <div key={`${config.prefix}-${row}`} className="relative flex items-center justify-center gap-2">
+                  {/* 좌석 블록들 (중앙 정렬) */}
+                  <div className="flex items-center gap-2">
                     {/* 좌측 3블록 */}
                     <div className="flex gap-1">
                       {renderSeatBlock(seatOffset, blocks[0])}
@@ -558,8 +558,8 @@ function Reserve() {
                     </div>
                   </div>
 
-                  {/* 행 번호를 오른쪽에 배치 */}
-                  <span className="text-sm text-gray-600 w-14 text-left font-bold ml-4">
+                  {/* 행 번호를 absolute로 오른쪽에 배치 */}
+                  <span className="absolute -right-16 text-sm text-gray-600 font-bold">
                     {row}행
                   </span>
                 </div>
