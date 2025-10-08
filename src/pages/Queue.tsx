@@ -31,7 +31,8 @@ function Queue() {
       console.log('✅ [LOAD TEST] Enter success, navigating to reserve')
       // 예약 토큰 저장
       localStorage.setItem('reservation_token', data.reservation_token)
-      navigate('/reserve')
+      // replace: true로 히스토리 교체 (뒤로가기 시 Landing으로 이동)
+      navigate('/reserve', { replace: true })
     },
     onError: (error) => {
       console.error('❌ [LOAD TEST] Enter failed (continuing):', error)

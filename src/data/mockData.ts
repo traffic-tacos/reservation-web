@@ -26,8 +26,16 @@ export interface MockQueueStatus {
   totalWaiting: number
 }
 
-// 이벤트 더미 데이터
+// 이벤트 더미 데이터 (날짜 순서대로 정렬)
 export const mockEvents: MockEvent[] = [
+  {
+    id: 'evt_2025_1004',
+    name: 'NewJeans 1st World Tour [BUNNIES]',
+    date: '2025-11-08 (토) 19:30',
+    description: '뉴진스 데뷔 첫 월드투어 - 서울 KSPO DOME (올림픽공원)',
+    availableSeats: 12000,
+    totalSeats: 15000,
+  },
   {
     id: 'evt_2025_1001',
     name: 'IU 2025 CONCERT [THE GOLDEN HOUR : ENCORE]',
@@ -35,6 +43,14 @@ export const mockEvents: MockEvent[] = [
     description: '아이유 월드투어 앵콜 콘서트 - 서울 잠실올림픽주경기장',
     availableSeats: 8500,
     totalSeats: 10000,
+  },
+  {
+    id: 'evt_2025_1005',
+    name: '임영웅 콘서트 [IM HERO] 2025',
+    date: '2025-11-16 (일) 18:00',
+    description: '임영웅 전국투어 서울 공연 - 고척스카이돔',
+    availableSeats: 14500,
+    totalSeats: 16000,
   },
   {
     id: 'evt_2025_1002',
@@ -51,22 +67,6 @@ export const mockEvents: MockEvent[] = [
     description: '2025 마마 어워드 - K-POP 최대 시상식 | 고척스카이돔',
     availableSeats: 6500,
     totalSeats: 7500,
-  },
-  {
-    id: 'evt_2025_1004',
-    name: 'NewJeans 1st World Tour [BUNNIES]',
-    date: '2025-11-08 (토) 19:30',
-    description: '뉴진스 데뷔 첫 월드투어 - 서울 KSPO DOME (올림픽공원)',
-    availableSeats: 12000,
-    totalSeats: 15000,
-  },
-  {
-    id: 'evt_2025_1005',
-    name: '임영웅 콘서트 [IM HERO] 2025',
-    date: '2025-11-16 (일) 18:00',
-    description: '임영웅 전국투어 서울 공연 - 고척스카이돔',
-    availableSeats: 14500,
-    totalSeats: 16000,
   },
 ]
 
