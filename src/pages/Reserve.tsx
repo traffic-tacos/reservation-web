@@ -12,7 +12,8 @@ function Reserve() {
   const [holdTimeLeft, setHoldTimeLeft] = useState(180) // 3분 = 180초
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
   const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F'>('1F')
-  const [zoomLevel, setZoomLevel] = useState(0.8) // 확대/축소 레벨 (기본값 0.8 = 80%)
+  const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
+  const [initialZoom, setInitialZoom] = useState<number | null>(null) // 초기 줌 레벨 저장
 
   // 3분 카운트다운 타이머
   useEffect(() => {
@@ -144,6 +145,36 @@ function Reserve() {
     }
   }
 
+  // 좌석 컨테이너 크기 계산 및 초기 줌 설정
+  useEffect(() => {
+    const calculateInitialZoom = () => {
+      const container = document.getElementById('seat-container')
+      const grid = document.getElementById('seat-grid')
+      
+      if (container && grid) {
+        const containerWidth = container.clientWidth - 48 // padding 제외
+        const gridWidth = grid.scrollWidth
+        
+        if (gridWidth > containerWidth) {
+          const calculatedZoom = containerWidth / gridWidth
+          const finalZoom = Math.max(0.5, Math.min(1, calculatedZoom)) // 0.5 ~ 1.0 범위
+          
+          console.log('📐 [ZOOM] Container:', containerWidth, 'Grid:', gridWidth, 'Calculated:', finalZoom)
+          
+          // 초기 줌이 설정되지 않았을 때만 설정
+          if (initialZoom === null) {
+            setInitialZoom(finalZoom)
+            setZoomLevel(finalZoom)
+          }
+        }
+      }
+    }
+
+    // 약간의 지연 후 계산 (렌더링 완료 대기)
+    const timer = setTimeout(calculateInitialZoom, 100)
+    return () => clearTimeout(timer)
+  }, [selectedFloor, initialZoom])
+
   // 마우스 휠 줌 핸들러
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -152,7 +183,7 @@ function Reserve() {
         setZoomLevel(prev => {
           const delta = e.deltaY > 0 ? -0.1 : 0.1
           const newZoom = prev + delta
-          return Math.max(0.5, Math.min(3, newZoom)) // 0.5x ~ 3x
+          return Math.max(0.3, Math.min(3, newZoom)) // 0.3x ~ 3x
         })
       }
     }
@@ -164,13 +195,13 @@ function Reserve() {
     }
   }, [])
 
-  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 통로)
+  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 통로 2줄)
   const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP', aisleRows: [5] },
-      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R', aisleRows: [6] },
+      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP', aisleRows: [5, 6] },
+      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R', aisleRows: [6, 7] },
       '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 40, prefix: 'S', aisleRows: [7, 8] },
-      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [9] },
+      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [9, 10] },
       '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 50, prefix: 'B', aisleRows: [10, 11] },
       '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 55, prefix: 'C', aisleRows: [12, 13] },
     }
@@ -385,6 +416,7 @@ function Reserve() {
         >
           {/* 좌석 그리드 (줌 적용 영역) */}
           <div 
+            id="seat-grid"
             className="space-y-3"
             style={{
               transform: `scale(${zoomLevel})`,
@@ -412,9 +444,38 @@ function Reserve() {
               const seatSize = 20 // 좌석 크기 (20px)
               const seatGap = 4 // 좌석 간격 (4px)
 
-              // 좌석을 좌/우 블록으로 나누기 (중앙 통로)
-              const leftSeats = Math.floor(count / 2)
-              const rightSeats = count - leftSeats
+              // 좌석을 4개 블록으로 나누기 (통로 2개)
+              const quarterSeats = Math.floor(count / 4)
+              const block1 = quarterSeats // 좌측 1/4
+              const block2 = quarterSeats // 좌측 2/4
+              const block3 = quarterSeats // 우측 3/4
+              const block4 = count - (block1 + block2 + block3) // 우측 4/4 (나머지)
+
+              const renderSeatBlock = (start: number, length: number) => {
+                return Array.from({ length }, (_, idx) => {
+                  const seatId = `${config.prefix}-${row}-${start + idx + 1}`
+                  const isSelected = selectedSeats.includes(seatId)
+                  
+                  const colorClasses = {
+                    purple: isSelected ? 'bg-pink-500 ring-4 ring-pink-300 shadow-lg' : 'bg-purple-500 hover:bg-purple-600 hover:shadow-lg',
+                    blue: isSelected ? 'bg-cyan-500 ring-4 ring-cyan-300 shadow-lg' : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg',
+                    green: isSelected ? 'bg-lime-500 ring-4 ring-lime-300 shadow-lg' : 'bg-green-500 hover:bg-green-600 hover:shadow-lg',
+                    orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
+                    red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
+                    gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
+                  }[config.color]
+
+                  return (
+                    <button
+                      key={seatId}
+                      onClick={() => handleSeatClick(seatId)}
+                      className={`rounded-lg transition-all transform hover:scale-125 ${colorClasses}`}
+                      style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
+                      title={seatId}
+                    />
+                  )
+                })
+              }
 
               return (
                 <div key={`${config.prefix}-${row}`} className="flex items-center justify-center space-x-2">
@@ -426,63 +487,39 @@ function Reserve() {
                   {/* 좌측 패딩 */}
                   <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
 
-                  {/* 좌측 블록 */}
+                  {/* 좌측 블록 1 */}
                   <div className="flex gap-1">
-                    {Array.from({ length: leftSeats }, (_, seatIdx) => {
-                      const seatId = `${config.prefix}-${row}-${seatIdx + 1}`
-                      const isSelected = selectedSeats.includes(seatId)
-                      
-                      const colorClasses = {
-                        purple: isSelected ? 'bg-pink-500 ring-4 ring-pink-300 shadow-lg' : 'bg-purple-500 hover:bg-purple-600 hover:shadow-lg',
-                        blue: isSelected ? 'bg-cyan-500 ring-4 ring-cyan-300 shadow-lg' : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg',
-                        green: isSelected ? 'bg-lime-500 ring-4 ring-lime-300 shadow-lg' : 'bg-green-500 hover:bg-green-600 hover:shadow-lg',
-                        orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
-                        red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
-                        gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
-                      }[config.color]
-
-                      return (
-                        <button
-                          key={seatId}
-                          onClick={() => handleSeatClick(seatId)}
-                          className={`rounded-lg transition-all transform hover:scale-125 ${colorClasses}`}
-                          style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
-                          title={seatId}
-                        />
-                      )
-                    })}
+                    {renderSeatBlock(0, block1)}
                   </div>
 
-                  {/* 중앙 통로 */}
-                  <div className="w-8 h-5 flex items-center justify-center">
-                    <div className="w-px h-full bg-gray-300"></div>
+                  {/* 통로 1 */}
+                  <div className="w-6 h-5 flex items-center justify-center">
+                    <div className="w-0.5 h-full bg-gray-300"></div>
                   </div>
 
-                  {/* 우측 블록 */}
+                  {/* 좌측 블록 2 */}
                   <div className="flex gap-1">
-                    {Array.from({ length: rightSeats }, (_, seatIdx) => {
-                      const seatId = `${config.prefix}-${row}-${leftSeats + seatIdx + 1}`
-                      const isSelected = selectedSeats.includes(seatId)
-                      
-                      const colorClasses = {
-                        purple: isSelected ? 'bg-pink-500 ring-4 ring-pink-300 shadow-lg' : 'bg-purple-500 hover:bg-purple-600 hover:shadow-lg',
-                        blue: isSelected ? 'bg-cyan-500 ring-4 ring-cyan-300 shadow-lg' : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg',
-                        green: isSelected ? 'bg-lime-500 ring-4 ring-lime-300 shadow-lg' : 'bg-green-500 hover:bg-green-600 hover:shadow-lg',
-                        orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
-                        red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
-                        gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
-                      }[config.color]
+                    {renderSeatBlock(block1, block2)}
+                  </div>
 
-                      return (
-                        <button
-                          key={seatId}
-                          onClick={() => handleSeatClick(seatId)}
-                          className={`rounded-lg transition-all transform hover:scale-125 ${colorClasses}`}
-                          style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
-                          title={seatId}
-                        />
-                      )
-                    })}
+                  {/* 중앙 통로 (더 넓게) */}
+                  <div className="w-10 h-5 flex items-center justify-center">
+                    <div className="w-1 h-full bg-gray-400"></div>
+                  </div>
+
+                  {/* 우측 블록 3 */}
+                  <div className="flex gap-1">
+                    {renderSeatBlock(block1 + block2, block3)}
+                  </div>
+
+                  {/* 통로 2 */}
+                  <div className="w-6 h-5 flex items-center justify-center">
+                    <div className="w-0.5 h-full bg-gray-300"></div>
+                  </div>
+
+                  {/* 우측 블록 4 */}
+                  <div className="flex gap-1">
+                    {renderSeatBlock(block1 + block2 + block3, block4)}
                   </div>
 
                   {/* 우측 패딩 */}
