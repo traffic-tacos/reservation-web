@@ -30,9 +30,9 @@ export interface MockQueueStatus {
 export const mockEvents: MockEvent[] = [
   {
     id: 'evt_2025_1004',
-    name: 'NewJeans 1st World Tour [BUNNIES]',
+    name: 'BLACKPINK WORLD TOUR [BORN PINK] FINALE',
     date: '2025-11-08 (토) 19:30',
-    description: '뉴진스 데뷔 첫 월드투어 - 서울 KSPO DOME (올림픽공원)',
+    description: '블랙핑크 월드투어 파이널 - 서울 잠실종합운동장 주경기장',
     availableSeats: 12000,
     totalSeats: 15000,
   },
@@ -59,14 +59,6 @@ export const mockEvents: MockEvent[] = [
     description: '방탄소년단 재결합 월드투어 서울 공연 - 잠실종합운동장 주경기장',
     availableSeats: 7200,
     totalSeats: 8000,
-  },
-  {
-    id: 'evt_2025_1003',
-    name: '2025 MAMA AWARDS (Mnet Asian Music Awards)',
-    date: '2025-11-30 (일) 17:00',
-    description: '2025 마마 어워드 - K-POP 최대 시상식 | 고척스카이돔',
-    availableSeats: 6500,
-    totalSeats: 7500,
   },
 ]
 
