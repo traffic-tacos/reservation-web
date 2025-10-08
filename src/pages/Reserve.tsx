@@ -172,7 +172,7 @@ function Reserve() {
     return () => clearTimeout(timer)
   }, [selectedFloor]) // initialZoom 의존성 제거하여 매번 재계산
 
-  // 마우스 휠 줌 핸들러
+  // 마우스 휠 줌 핸들러 (층 변경 시에도 재등록)
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -185,12 +185,22 @@ function Reserve() {
       }
     }
 
-    const container = document.getElementById('seat-container')
-    if (container) {
-      container.addEventListener('wheel', handleWheel, { passive: false })
-      return () => container.removeEventListener('wheel', handleWheel)
+    // 약간의 지연 후 이벤트 리스너 등록 (DOM 준비 대기)
+    const timer = setTimeout(() => {
+      const container = document.getElementById('seat-container')
+      if (container) {
+        container.addEventListener('wheel', handleWheel, { passive: false })
+      }
+    }, 100)
+
+    return () => {
+      clearTimeout(timer)
+      const container = document.getElementById('seat-container')
+      if (container) {
+        container.removeEventListener('wheel', handleWheel)
+      }
     }
-  }, [])
+  }, [selectedFloor]) // selectedFloor 변경 시 재등록
 
   // 층별 좌석 배치 생성 (9층, 돔 형태: 중앙 고정 + 양옆 증가)
   // 총 10,000석 목표: 각 층별 좌석 수 계산됨
@@ -290,15 +300,15 @@ function Reserve() {
         </div>
 
         {/* 수량 선택 */}
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700">수량:</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <label className="text-sm font-medium text-gray-700 whitespace-nowrap">수량:</label>
           <select
             value={quantity}
             onChange={(e) => {
               setQuantity(Number(e.target.value))
               setSelectedSeats([])
             }}
-            className="input py-2 px-3 text-sm"
+            className="input py-2 px-3 text-sm min-w-[100px]"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
               <option key={num} value={num}>{num}매</option>
