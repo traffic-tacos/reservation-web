@@ -155,25 +155,22 @@ function Reserve() {
         const containerWidth = container.clientWidth - 48 // padding 제외
         const gridWidth = grid.scrollWidth
         
-        if (gridWidth > containerWidth) {
-          const calculatedZoom = containerWidth / gridWidth
-          const finalZoom = Math.max(0.5, Math.min(1, calculatedZoom)) // 0.5 ~ 1.0 범위
+        if (gridWidth > 0) {
+          // 그리드가 컨테이너보다 클 경우 맞춤 줌 계산
+          const calculatedZoom = Math.min(1, (containerWidth / gridWidth) * 0.95) // 95%로 여유 공간 확보
+          const finalZoom = Math.max(0.3, calculatedZoom) // 최소 0.3x
           
-          console.log('📐 [ZOOM] Container:', containerWidth, 'Grid:', gridWidth, 'Calculated:', finalZoom)
-          
-          // 초기 줌이 설정되지 않았을 때만 설정
-          if (initialZoom === null) {
-            setInitialZoom(finalZoom)
-            setZoomLevel(finalZoom)
-          }
+          // 층 변경 시마다 초기 줌 재설정
+          setInitialZoom(finalZoom)
+          setZoomLevel(finalZoom)
         }
       }
     }
 
     // 약간의 지연 후 계산 (렌더링 완료 대기)
-    const timer = setTimeout(calculateInitialZoom, 100)
+    const timer = setTimeout(calculateInitialZoom, 150)
     return () => clearTimeout(timer)
-  }, [selectedFloor, initialZoom])
+  }, [selectedFloor]) // initialZoom 의존성 제거하여 매번 재계산
 
   // 마우스 휠 줌 핸들러
   useEffect(() => {
@@ -438,17 +435,28 @@ function Reserve() {
         <div 
           id="seat-container"
           className="max-h-[600px] overflow-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#cbd5e1 #f1f5f9'
+          }}
         >
-          {/* 좌석 그리드 (줌 적용 영역) */}
+          {/* 줌 래퍼 (transform 적용) */}
           <div 
-            id="seat-grid"
-            className="space-y-3"
+            className="inline-block min-w-full"
             style={{
               transform: `scale(${zoomLevel})`,
-              transformOrigin: 'center top',
+              transformOrigin: 'top center',
               transition: 'transform 0.2s ease-out'
             }}
           >
+            {/* 좌석 그리드 */}
+            <div 
+              id="seat-grid"
+              className="space-y-3 mx-auto"
+              style={{
+                width: 'fit-content'
+              }}
+            >
             {currentFloorSeats.map(({ row, count, config, isAisle }) => {
               // 통로인 경우 빈 줄만 표시 (텍스트 제거)
               if (isAisle) {
@@ -557,6 +565,7 @@ function Reserve() {
                 </div>
               )
             })}
+            </div>
           </div>
         </div>
 
