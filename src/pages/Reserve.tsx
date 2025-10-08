@@ -9,10 +9,31 @@ function Reserve() {
   const navigate = useNavigate()
   const [quantity, setQuantity] = useState(1)
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
-  const [holdTimeLeft] = useState(60)
+  const [holdTimeLeft, setHoldTimeLeft] = useState(180) // 3분 = 180초
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
   const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F'>('1F')
   const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
+
+  // 3분 카운트다운 타이머
+  useEffect(() => {
+    if (holdTimeLeft <= 0) {
+      alert('예약 시간이 만료되었습니다. 처음부터 다시 시작해주세요.')
+      navigate('/')
+      return
+    }
+
+    const timer = setInterval(() => {
+      setHoldTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [holdTimeLeft, navigate])
 
   // 예약 생성 뮤테이션
   const createReservationMutation = useMutation({
@@ -200,11 +221,28 @@ function Reserve() {
             </p>
           </div>
           
-          {/* 홀드 타이머 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2">
-            <div className="flex items-center space-x-2 text-yellow-800">
-              <Clock size={16} />
-              <span className="font-bold">{holdTimeLeft}초</span>
+          {/* 홀드 타이머 (3분 카운트다운) */}
+          <div className={`border rounded-xl px-4 py-2 ${
+            holdTimeLeft <= 30 
+              ? 'bg-red-50 border-red-300' 
+              : holdTimeLeft <= 60 
+              ? 'bg-orange-50 border-orange-300' 
+              : 'bg-yellow-50 border-yellow-200'
+          }`}>
+            <div className={`flex items-center space-x-2 ${
+              holdTimeLeft <= 30 
+                ? 'text-red-800' 
+                : holdTimeLeft <= 60 
+                ? 'text-orange-800' 
+                : 'text-yellow-800'
+            }`}>
+              <Clock size={18} className={holdTimeLeft <= 30 ? 'animate-pulse' : ''} />
+              <div className="text-right">
+                <div className="font-bold text-lg">
+                  {Math.floor(holdTimeLeft / 60)}:{(holdTimeLeft % 60).toString().padStart(2, '0')}
+                </div>
+                <div className="text-xs opacity-80">남은 시간</div>
+              </div>
             </div>
           </div>
         </div>
