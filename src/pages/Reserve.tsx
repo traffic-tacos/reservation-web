@@ -13,7 +13,6 @@ function Reserve() {
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
   const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F' | '7F' | '8F' | '9F'>('1F')
   const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
-  const [initialZoom, setInitialZoom] = useState<number | null>(null) // 초기 줌 레벨 저장
 
   // 3분 카운트다운 타이머
   useEffect(() => {
@@ -160,8 +159,7 @@ function Reserve() {
           const calculatedZoom = Math.min(1, (containerWidth / gridWidth) * 0.95) // 95%로 여유 공간 확보
           const finalZoom = Math.max(0.3, calculatedZoom) // 최소 0.3x
           
-          // 층 변경 시마다 초기 줌 재설정
-          setInitialZoom(finalZoom)
+          // 층 변경 시마다 줌 재설정
           setZoomLevel(finalZoom)
         }
       }
