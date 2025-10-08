@@ -3,6 +3,7 @@ export interface MockEvent {
   id: string
   name: string
   date: string
+  openDate?: string // 예매 오픈 날짜 (선택적)
   description: string
   availableSeats: number
   totalSeats: number
@@ -59,6 +60,15 @@ export const mockEvents: MockEvent[] = [
     description: '방탄소년단 재결합 월드투어 서울 공연 - 잠실종합운동장 주경기장',
     availableSeats: 7200,
     totalSeats: 8000,
+  },
+  {
+    id: 'evt_2025_1006',
+    name: 'G-DRAGON 2025 WORLD TOUR [COUP D\'ETAT]',
+    date: '2025-12-01 (일) 19:00',
+    openDate: '2025-10-15', // 예매 오픈일
+    description: 'G-Dragon 월드투어 서울 공연 - 고척스카이돔',
+    availableSeats: 18000,
+    totalSeats: 18000,
   },
 ]
 

@@ -56,7 +56,10 @@ function Landing() {
     id: event.id,
     name: event.name,
     date: event.date,
+    openDate: event.openDate,
     dDay: calculateDDay(event.date),
+    openDDay: event.openDate ? calculateDDay(event.openDate) : null,
+    isOpen: event.openDate ? calculateDDay(event.openDate) <= 0 : true, // openDate가 없거나 오픈일이 지났으면 true
   }))
 
   const joinQueueMutation = useMutation({
@@ -178,57 +181,79 @@ function Landing() {
         <div className="space-y-4">
           {/* 이벤트 카드 목록 */}
           <div className="grid grid-cols-1 gap-4">
-            {events.map((event) => (
-              <motion.button
-                key={event.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setSelectedEvent(event.id)}
-                className={`
-                  text-left p-4 rounded-xl border-2 transition-all duration-200
-                  ${selectedEvent === event.id
-                    ? 'border-primary-500 bg-primary-50 shadow-md'
-                    : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-sm'
-                  }
-                `}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-lg mb-1 ${
-                      selectedEvent === event.id ? 'text-primary-700' : 'text-gray-900'
-                    }`}>
-                      {event.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2 flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {event.date}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
-                    {/* D-Day 배지 */}
-                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      event.dDay === 0 
-                        ? 'bg-red-500 text-white animate-pulse' 
-                        : event.dDay < 0
-                        ? 'bg-gray-400 text-white'
-                        : event.dDay <= 7
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-blue-500 text-white'
-                    }`}>
-                      {event.dDay === 0 ? 'D-Day' : event.dDay < 0 ? '종료' : `D-${event.dDay}`}
+            {events.map((event) => {
+              const isDisabled = !event.isOpen
+              
+              return (
+                <motion.button
+                  key={event.id}
+                  whileHover={!isDisabled ? { scale: 1.02 } : {}}
+                  whileTap={!isDisabled ? { scale: 0.98 } : {}}
+                  onClick={() => !isDisabled && setSelectedEvent(event.id)}
+                  disabled={isDisabled}
+                  title={isDisabled ? `예매 오픈: ${event.openDate}` : undefined}
+                  className={`
+                    text-left p-4 rounded-xl border-2 transition-all duration-200
+                    ${isDisabled
+                      ? 'border-gray-300 bg-gray-50 cursor-not-allowed opacity-60'
+                      : selectedEvent === event.id
+                      ? 'border-primary-500 bg-primary-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-sm'
+                    }
+                  `}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-lg mb-1 ${
+                        isDisabled
+                          ? 'text-gray-500'
+                          : selectedEvent === event.id 
+                          ? 'text-primary-700' 
+                          : 'text-gray-900'
+                      }`}>
+                        {event.name}
+                      </h3>
+                      <p className={`text-sm mb-2 flex items-center ${
+                        isDisabled ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {event.date}
+                      </p>
                     </div>
-                    {/* 선택 체크 아이콘 */}
-                    {selectedEvent === event.id && (
-                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                    <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
+                      {/* Open D-Day 배지 (예매 오픈 전) */}
+                      {event.openDDay !== null && event.openDDay > 0 && (
+                        <div className="px-3 py-1 rounded-full text-sm font-bold bg-purple-500 text-white">
+                          Open D-{event.openDDay}
+                        </div>
+                      )}
+                      
+                      {/* D-Day 배지 (공연일) */}
+                      <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                        event.dDay === 0 
+                          ? 'bg-red-500 text-white animate-pulse' 
+                          : event.dDay < 0
+                          ? 'bg-gray-400 text-white'
+                          : event.dDay <= 7
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-blue-500 text-white'
+                      }`}>
+                        {event.dDay === 0 ? 'D-Day' : event.dDay < 0 ? '종료' : `D-${event.dDay}`}
                       </div>
-                    )}
+                      
+                      {/* 선택 체크 아이콘 */}
+                      {!isDisabled && selectedEvent === event.id && (
+                        <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.button>
-            ))}
+                </motion.button>
+              )
+            })}
           </div>
 
           {/* 대기열 입장 버튼 */}
