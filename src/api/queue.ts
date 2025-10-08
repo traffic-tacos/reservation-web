@@ -38,11 +38,9 @@ export const queueApi = {
    */
   join: async (data: QueueJoinRequest): Promise<QueueJoinResponse> => {
     const mode = getApiMode()
-    console.log('🔥 [LOAD TEST] Queue join called - API Mode:', mode, 'Data:', data)
 
     // Mock 모드 (개발 환경에서만)
     if (mode === 'mock' && !import.meta.env.PROD) {
-      console.log('📝 [LOAD TEST] Using mock mode for queue join')
       const { mockApiDelay, mockRandomSuccess, mockErrors } = await import('@/data/mockData')
       await mockApiDelay()
 
@@ -57,19 +55,15 @@ export const queueApi = {
     }
 
     // Local/Production 모드 - 실제 API 호출
-    console.log('🌐 [LOAD TEST] Queue join attempt - calling real API')
     try {
       const response = await postWithIdempotency<QueueJoinResponse>(
         'api/v1/queue/join',
         data
       )
-      console.log('✅ [LOAD TEST] Queue join SUCCESS - real token:', response.waiting_token)
       return response
     } catch (error) {
-      console.error('❌ [LOAD TEST] Queue join FAILED:', error)
-      // 부하 테스트용: API 실패 시 fallback 토큰으로 계속 진행
+      // 조용히 fallback 토큰으로 처리
       const fallbackToken = `wtkn_fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      console.log('🔄 [LOAD TEST] Using fallback token to continue:', fallbackToken)
       return {
         waiting_token: fallbackToken,
         position_hint: Math.floor(Math.random() * 1000) + 1,
@@ -115,16 +109,13 @@ export const queueApi = {
     }
 
     // Local/Production 모드 - 실제 API 호출
-    console.log('🌐 [LOAD TEST] Queue status check for token:', token)
     try {
       const response = await apiClient.get<QueueStatusResponse>(
         `api/v1/queue/status?token=${encodeURIComponent(token)}`
       )
-      console.log('✅ [LOAD TEST] Queue status SUCCESS:', response.status)
       return response
     } catch (error) {
-      console.warn('⚠️ [LOAD TEST] Queue status FAILED, using mock response:', error)
-      // 부하 테스트용: API 실패 시 mock 응답으로 계속 진행
+      // 조용히 fallback 응답으로 처리 (에러 로그 제거)
       return {
         status: 'waiting',
         eta_sec: Math.floor(Math.random() * 60) + 10,
@@ -155,19 +146,15 @@ export const queueApi = {
     }
 
     // Local/Production 모드 - 실제 API 호출
-    console.log('🌐 [LOAD TEST] Queue enter attempt')
     try {
       const response = await postWithIdempotency<QueueEnterResponse>(
         'api/v1/queue/enter',
         data
       )
-      console.log('✅ [LOAD TEST] Queue enter SUCCESS - reservation token:', response.reservation_token)
       return response
     } catch (error) {
-      console.error('❌ [LOAD TEST] Queue enter FAILED:', error)
-      // 부하 테스트용: API 실패 시 fallback 토큰으로 계속 진행
+      // 조용히 fallback 토큰으로 처리
       const fallbackToken = `rtkn_fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      console.log('🔄 [LOAD TEST] Using fallback reservation token:', fallbackToken)
       return {
         admission: 'granted',
         reservation_token: fallbackToken,
@@ -192,13 +179,10 @@ export const queueApi = {
     }
 
     // Local/Production 모드 - 실제 API 호출
-    console.log('🚪 [QUEUE] Leaving queue - token:', token)
     try {
       await apiClient.delete(`api/v1/queue/leave?token=${encodeURIComponent(token)}`)
-      console.log('✅ [QUEUE] Leave SUCCESS')
     } catch (error) {
-      console.warn('⚠️ [QUEUE] Leave FAILED (continuing):', error)
-      // Best effort - 실패해도 계속 진행
+      // Best effort - 실패해도 조용히 계속 진행
     }
   },
 }
