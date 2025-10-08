@@ -339,17 +339,20 @@ function Reserve() {
           </p>
         </div>
 
-        {/* 좌석 그리드 (돔 곡선 형태 + 줌) */}
+        {/* 좌석 그리드 컨테이너 (스크롤 영역) */}
         <div 
           id="seat-container"
           className="max-h-[600px] overflow-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl"
-          style={{
-            transform: `scale(${zoomLevel})`,
-            transformOrigin: 'center top',
-            transition: 'transform 0.2s ease-out'
-          }}
         >
-          <div className="space-y-3">
+          {/* 좌석 그리드 (줌 적용 영역) */}
+          <div 
+            className="space-y-3"
+            style={{
+              transform: `scale(${zoomLevel})`,
+              transformOrigin: 'center top',
+              transition: 'transform 0.2s ease-out'
+            }}
+          >
             {currentFloorSeats.map(({ row, count, config }) => {
               // 중앙 정렬을 위한 패딩 계산
               const maxSeats = config.baseSeats
@@ -386,7 +389,7 @@ function Reserve() {
                         <button
                           key={seatId}
                           onClick={() => handleSeatClick(seatId)}
-                          className={`rounded-full transition-all transform hover:scale-125 ${colorClasses}`}
+                          className={`rounded-lg transition-all transform hover:scale-125 ${colorClasses}`}
                           style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
                           title={seatId}
                         />
