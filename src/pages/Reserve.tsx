@@ -450,7 +450,6 @@ function Reserve() {
 
               // 좌석을 3x3 그리드로 9등분 (정사각형 배치)
               const seatSize = 20 // 좌석 크기 (20px)
-              const seatGap = 4 // 좌석 간격 (4px)
               const aisleGap = 24 // 통로 간격 (24px)
               
               // 9등분: 각 블록당 좌석 수
