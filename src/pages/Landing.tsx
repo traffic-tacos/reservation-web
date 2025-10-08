@@ -16,7 +16,7 @@ function Landing() {
   
   // 타이핑 애니메이션 효과
   useEffect(() => {
-    let timeout: NodeJS.Timeout
+    let timeout: ReturnType<typeof setTimeout>
 
     if (!isDeleting && typedText === fullText) {
       // 전체 텍스트 완성 후 3초 대기
