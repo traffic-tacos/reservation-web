@@ -99,45 +99,85 @@ function Landing() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className="card max-w-md mx-auto"
+        className="card max-w-3xl mx-auto"
       >
         <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-          이벤트 선택
+          🎤 예매 가능한 공연
         </h2>
 
         <div className="space-y-4">
-          <div>
-            <label className="label">예매할 이벤트를 선택하세요</label>
-            <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              className="input"
-            >
-              <option value="">이벤트 선택</option>
-              {events.map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.name} - {event.date}
-                </option>
-              ))}
-            </select>
+          {/* 이벤트 카드 목록 */}
+          <div className="grid grid-cols-1 gap-4">
+            {events.map((event) => (
+              <motion.button
+                key={event.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedEvent(event.id)}
+                className={`
+                  text-left p-4 rounded-xl border-2 transition-all duration-200
+                  ${selectedEvent === event.id
+                    ? 'border-primary-500 bg-primary-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-primary-300 hover:shadow-sm'
+                  }
+                `}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className={`font-bold text-lg mb-1 ${
+                      selectedEvent === event.id ? 'text-primary-700' : 'text-gray-900'
+                    }`}>
+                      {event.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2 flex items-center">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      {event.date}
+                    </p>
+                  </div>
+                  {selectedEvent === event.id && (
+                    <div className="flex-shrink-0 ml-4">
+                      <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.button>
+            ))}
           </div>
 
+          {/* 대기열 입장 버튼 */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleJoinQueue}
             disabled={!selectedEvent || joinQueueMutation.isPending}
-            className="btn btn-primary w-full"
+            className="btn btn-primary w-full text-lg py-4 mt-6"
           >
             {joinQueueMutation.isPending ? (
               <div className="flex items-center justify-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>참여 중...</span>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>대기열 참여 중...</span>
               </div>
             ) : (
-              '대기열 입장하기'
+              <div className="flex items-center justify-center space-x-2">
+                <Users className="w-5 h-5" />
+                <span>대기열 입장하기</span>
+              </div>
             )}
           </motion.button>
+
+          {selectedEvent && (
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-sm text-gray-500 text-center mt-2"
+            >
+              선택하신 공연의 대기열로 이동합니다
+            </motion.p>
+          )}
         </div>
       </motion.div>
     </div>
