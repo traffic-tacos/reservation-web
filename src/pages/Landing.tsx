@@ -63,42 +63,67 @@ function Landing() {
       </motion.div>
 
       {/* 특징 카드 */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-      >
-        <div className="card text-center">
-          <div className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          whileHover={{ scale: 1.05, y: -5 }}
+          className="card text-center cursor-pointer"
+        >
+          <motion.div
+            whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="w-12 h-12 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          >
             <Zap className="w-6 h-6 text-primary-600" />
-          </div>
+          </motion.div>
           <h3 className="font-semibold text-gray-900 mb-2">빠른 예매</h3>
           <p className="text-sm text-gray-600">최적화된 시스템으로 빠른 티켓 예매</p>
-        </div>
+        </motion.div>
 
-        <div className="card text-center">
-          <div className="w-12 h-12 bg-secondary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          whileHover={{ scale: 1.05, y: -5 }}
+          className="card text-center cursor-pointer"
+        >
+          <motion.div
+            whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="w-12 h-12 bg-secondary-100 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          >
             <Users className="w-6 h-6 text-secondary-600" />
-          </div>
+          </motion.div>
           <h3 className="font-semibold text-gray-900 mb-2">공정성 보장</h3>
           <p className="text-sm text-gray-600">대기열 시스템으로 공정한 기회 제공</p>
-        </div>
+        </motion.div>
 
-        <div className="card text-center">
-          <div className="w-12 h-12 bg-accent-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          whileHover={{ scale: 1.05, y: -5 }}
+          className="card text-center cursor-pointer"
+        >
+          <motion.div
+            whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+            transition={{ duration: 0.5 }}
+            className="w-12 h-12 bg-accent-100 rounded-2xl flex items-center justify-center mx-auto mb-4"
+          >
             <Calendar className="w-6 h-6 text-accent-600" />
-          </div>
+          </motion.div>
           <h3 className="font-semibold text-gray-900 mb-2">안정성</h3>
           <p className="text-sm text-gray-600">30k RPS 트래픽에도 안정적인 서비스</p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
 
       {/* 이벤트 선택 및 대기열 참여 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
         className="card max-w-3xl mx-auto"
       >
         <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
