@@ -11,7 +11,8 @@ function Reserve() {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [holdTimeLeft] = useState(60)
   const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
-  const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F'>('1F')
+  const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F'>('1F')
+  const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
 
   // 예약 생성 뮤테이션
   const createReservationMutation = useMutation({
@@ -122,12 +123,35 @@ function Reserve() {
     }
   }
 
-  // 층별 좌석 배치 생성 (돔 형태 곡선)
-  const generateFloorSeats = (floor: '1F' | '2F' | '3F') => {
+  // 마우스 휠 줌 핸들러
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        setZoomLevel(prev => {
+          const delta = e.deltaY > 0 ? -0.1 : 0.1
+          const newZoom = prev + delta
+          return Math.max(0.5, Math.min(3, newZoom)) // 0.5x ~ 3x
+        })
+      }
+    }
+
+    const container = document.getElementById('seat-container')
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false })
+      return () => container.removeEventListener('wheel', handleWheel)
+    }
+  }, [])
+
+  // 층별 좌석 배치 생성 (6층, 돔 형태 곡선)
+  const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 20, baseSeats: 50, prefix: 'VIP' },
-      '2F': { name: 'R석', color: 'blue', rows: 40, baseSeats: 80, prefix: 'R' },
-      '3F': { name: 'S석', color: 'green', rows: 50, baseSeats: 60, prefix: 'S' },
+      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 30, prefix: 'VIP' },
+      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 35, prefix: 'R' },
+      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 40, prefix: 'S' },
+      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A' },
+      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 50, prefix: 'B' },
+      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 55, prefix: 'C' },
     }
 
     const config = floorConfig[floor]
@@ -135,7 +159,7 @@ function Reserve() {
 
     for (let row = 1; row <= config.rows; row++) {
       // 돔 곡선 계산: 앞쪽(1행)은 좁고, 뒤쪽(마지막 행)은 넓음
-      const curveFactor = 0.5 + (row / config.rows) * 0.5 // 0.5 ~ 1.0
+      const curveFactor = 0.6 + (row / config.rows) * 0.4 // 0.6 ~ 1.0
       const seatsInRow = Math.floor(config.baseSeats * curveFactor)
       
       seats.push({
@@ -153,6 +177,9 @@ function Reserve() {
     '1F': { name: 'VIP석', color: 'purple', emoji: '💎', gradient: 'from-purple-500 to-purple-700' },
     '2F': { name: 'R석', color: 'blue', emoji: '🎫', gradient: 'from-blue-500 to-blue-700' },
     '3F': { name: 'S석', color: 'green', emoji: '🎟️', gradient: 'from-green-500 to-green-700' },
+    '4F': { name: 'A석', color: 'orange', emoji: '🎪', gradient: 'from-orange-500 to-orange-700' },
+    '5F': { name: 'B석', color: 'red', emoji: '🎭', gradient: 'from-red-500 to-red-700' },
+    '6F': { name: 'C석', color: 'gray', emoji: '🎬', gradient: 'from-gray-500 to-gray-700' },
   }[selectedFloor]
 
   return (
@@ -207,31 +234,37 @@ function Reserve() {
         transition={{ delay: 0.1 }}
         className="card mb-6"
       >
-        <div className="flex space-x-2">
-          {(['1F', '2F', '3F'] as const).map((floor) => {
+        <div className="grid grid-cols-3 gap-2">
+          {(['1F', '2F', '3F', '4F', '5F', '6F'] as const).map((floor) => {
             const config = {
               '1F': { name: 'VIP석', emoji: '💎', color: 'purple' },
               '2F': { name: 'R석', emoji: '🎫', color: 'blue' },
               '3F': { name: 'S석', emoji: '🎟️', color: 'green' },
+              '4F': { name: 'A석', emoji: '🎪', color: 'orange' },
+              '5F': { name: 'B석', emoji: '🎭', color: 'red' },
+              '6F': { name: 'C석', emoji: '🎬', color: 'gray' },
             }[floor]
 
             const isActive = selectedFloor === floor
             const colorClasses = {
-              purple: isActive ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-purple-100',
-              blue: isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100',
-              green: isActive ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-green-100',
+              purple: isActive ? 'bg-purple-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-purple-100',
+              blue: isActive ? 'bg-blue-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-blue-100',
+              green: isActive ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-green-100',
+              orange: isActive ? 'bg-orange-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-orange-100',
+              red: isActive ? 'bg-red-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-red-100',
+              gray: isActive ? 'bg-gray-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
             }[config.color]
 
             return (
               <button
                 key={floor}
                 onClick={() => setSelectedFloor(floor)}
-                className={`flex-1 py-4 px-6 rounded-xl font-medium transition-all ${colorClasses}`}
+                className={`py-3 px-4 rounded-xl font-medium transition-all ${colorClasses}`}
               >
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="text-2xl">{config.emoji}</span>
+                  <span className="text-xl">{config.emoji}</span>
                   <div className="text-left">
-                    <div className="text-lg font-bold">{floor}</div>
+                    <div className="text-sm font-bold">{floor}</div>
                     <div className="text-xs opacity-80">{config.name}</div>
                   </div>
                 </div>
@@ -261,41 +294,62 @@ function Reserve() {
           </div>
         </div>
 
-        {/* 좌석 그리드 (돔 곡선 형태) */}
-        <div className="max-h-[600px] overflow-y-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl">
-          <div className="space-y-2">
+        {/* 줌 컨트롤 안내 */}
+        <div className="mb-4 text-center">
+          <p className="text-xs text-gray-500">
+            💡 <kbd className="px-2 py-1 bg-gray-200 rounded text-xs">Ctrl</kbd> + 마우스 휠로 확대/축소 (현재: {Math.round(zoomLevel * 100)}%)
+          </p>
+        </div>
+
+        {/* 좌석 그리드 (돔 곡선 형태 + 줌) */}
+        <div 
+          id="seat-container"
+          className="max-h-[600px] overflow-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl"
+          style={{
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: 'center top',
+            transition: 'transform 0.2s ease-out'
+          }}
+        >
+          <div className="space-y-3">
             {currentFloorSeats.map(({ row, count, config }) => {
               // 중앙 정렬을 위한 패딩 계산
               const maxSeats = config.baseSeats
               const paddingSeats = Math.floor((maxSeats - count) / 2)
+              const seatSize = 20 // 좌석 크기 (20px)
+              const seatGap = 4 // 좌석 간격 (4px)
 
               return (
-                <div key={`${config.prefix}-${row}`} className="flex items-center justify-center space-x-1">
+                <div key={`${config.prefix}-${row}`} className="flex items-center justify-center space-x-2">
                   {/* 행 번호 */}
-                  <span className="text-xs text-gray-500 w-12 text-right font-mono">
+                  <span className="text-sm text-gray-600 w-14 text-right font-bold">
                     {row}행
                   </span>
 
                   {/* 좌측 패딩 */}
-                  <div style={{ width: `${paddingSeats * 12}px` }}></div>
+                  <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
 
                   {/* 좌석 버튼들 */}
-                  <div className="flex space-x-1">
+                  <div className="flex gap-1">
                     {Array.from({ length: count }, (_, seatIdx) => {
                       const seatId = `${config.prefix}-${row}-${seatIdx + 1}`
                       const isSelected = selectedSeats.includes(seatId)
                       
                       const colorClasses = {
-                        purple: isSelected ? 'bg-pink-500 ring-2 ring-pink-300' : 'bg-purple-500 hover:bg-purple-600',
-                        blue: isSelected ? 'bg-cyan-500 ring-2 ring-cyan-300' : 'bg-blue-500 hover:bg-blue-600',
-                        green: isSelected ? 'bg-lime-500 ring-2 ring-lime-300' : 'bg-green-500 hover:bg-green-600',
+                        purple: isSelected ? 'bg-pink-500 ring-4 ring-pink-300 shadow-lg' : 'bg-purple-500 hover:bg-purple-600 hover:shadow-lg',
+                        blue: isSelected ? 'bg-cyan-500 ring-4 ring-cyan-300 shadow-lg' : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg',
+                        green: isSelected ? 'bg-lime-500 ring-4 ring-lime-300 shadow-lg' : 'bg-green-500 hover:bg-green-600 hover:shadow-lg',
+                        orange: isSelected ? 'bg-yellow-500 ring-4 ring-yellow-300 shadow-lg' : 'bg-orange-500 hover:bg-orange-600 hover:shadow-lg',
+                        red: isSelected ? 'bg-rose-500 ring-4 ring-rose-300 shadow-lg' : 'bg-red-500 hover:bg-red-600 hover:shadow-lg',
+                        gray: isSelected ? 'bg-slate-500 ring-4 ring-slate-300 shadow-lg' : 'bg-gray-500 hover:bg-gray-600 hover:shadow-lg',
                       }[config.color]
 
                       return (
                         <button
                           key={seatId}
                           onClick={() => handleSeatClick(seatId)}
-                          className={`w-3 h-3 rounded-full transition-all transform hover:scale-125 ${colorClasses}`}
+                          className={`rounded-full transition-all transform hover:scale-125 ${colorClasses}`}
+                          style={{ width: `${seatSize}px`, height: `${seatSize}px` }}
                           title={seatId}
                         />
                       )
@@ -303,7 +357,7 @@ function Reserve() {
                   </div>
 
                   {/* 우측 패딩 */}
-                  <div style={{ width: `${paddingSeats * 12}px` }}></div>
+                  <div style={{ width: `${paddingSeats * (seatSize + seatGap)}px` }}></div>
                 </div>
               )
             })}
