@@ -310,13 +310,16 @@ function Reserve() {
         <div className="grid grid-cols-3 gap-2">
           {(['1F', '2F', '3F', '4F', '5F', '6F'] as const).map((floor) => {
             const config = {
-              '1F': { name: 'VIP석', emoji: '💎', color: 'purple' },
-              '2F': { name: 'R석', emoji: '🎫', color: 'blue' },
-              '3F': { name: 'S석', emoji: '🎟️', color: 'green' },
-              '4F': { name: 'A석', emoji: '🎪', color: 'orange' },
-              '5F': { name: 'B석', emoji: '🎭', color: 'red' },
-              '6F': { name: 'C석', emoji: '🎬', color: 'gray' },
+              '1F': { name: 'VIP석', emoji: '💎', color: 'purple', prefix: 'VIP' },
+              '2F': { name: 'R석', emoji: '🎫', color: 'blue', prefix: 'R' },
+              '3F': { name: 'S석', emoji: '🎟️', color: 'green', prefix: 'S' },
+              '4F': { name: 'A석', emoji: '🎪', color: 'orange', prefix: 'A' },
+              '5F': { name: 'B석', emoji: '🎭', color: 'red', prefix: 'B' },
+              '6F': { name: 'C석', emoji: '🎬', color: 'gray', prefix: 'C' },
             }[floor]
+
+            // 해당 층에서 선택된 좌석 개수 계산
+            const seatsInFloor = selectedSeats.filter(seat => seat.startsWith(config.prefix)).length
 
             const isActive = selectedFloor === floor
             const colorClasses = {
@@ -332,7 +335,7 @@ function Reserve() {
               <button
                 key={floor}
                 onClick={() => setSelectedFloor(floor)}
-                className={`py-3 px-4 rounded-xl font-medium transition-all ${colorClasses}`}
+                className={`relative py-3 px-4 rounded-xl font-medium transition-all ${colorClasses}`}
               >
                 <div className="flex items-center justify-center space-x-2">
                   <span className="text-xl">{config.emoji}</span>
@@ -341,6 +344,12 @@ function Reserve() {
                     <div className="text-xs opacity-80">{config.name}</div>
                   </div>
                 </div>
+                {/* 선택된 좌석 개수 배지 */}
+                {seatsInFloor > 0 && (
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
+                    {seatsInFloor}
+                  </div>
+                )}
               </button>
             )
           })}
@@ -542,12 +551,22 @@ function Reserve() {
             </p>
             <div className="flex flex-wrap gap-2">
               {selectedSeats.map(seat => (
-                <span
+                <div
                   key={seat}
-                  className="px-3 py-1.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-xs font-medium rounded-lg shadow-md"
+                  className="group relative px-3 py-1.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-xs font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
                 >
-                  {seat}
-                </span>
+                  <span>{seat}</span>
+                  {/* X 버튼 (호버 시 표시) */}
+                  <button
+                    onClick={() => {
+                      setSelectedSeats(prev => prev.filter(s => s !== seat))
+                    }}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                    title="선택 취소"
+                  >
+                    <span className="text-xs leading-none">×</span>
+                  </button>
+                </div>
               ))}
             </div>
           </motion.div>
