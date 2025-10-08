@@ -475,16 +475,19 @@ function Reserve() {
                 )
               }
 
-              // 좌석을 3x3 그리드로 9등분 (정사각형 배치)
+              // 좌석을 3x3 그리드로 9등분 (정사각형 배치 + 좌우 대칭)
               const seatSize = 20 // 좌석 크기 (20px)
               const aisleGap = 24 // 통로 간격 (24px)
               
-              // 9등분: 각 블록당 좌석 수
+              // 9등분: 각 블록당 좌석 수 (좌우 대칭, 나머지는 중앙에)
               const seatsPerBlock = Math.floor(count / 9)
+              const remainder = count % 9
+              
+              // 나머지를 중앙 블록(4번 인덱스)에 추가하여 좌우 대칭 유지
               const blocks = [
                 seatsPerBlock, seatsPerBlock, seatsPerBlock, // 좌측 3블록
-                seatsPerBlock, seatsPerBlock, seatsPerBlock, // 중앙 3블록
-                seatsPerBlock, seatsPerBlock, count - (seatsPerBlock * 8) // 우측 3블록 (마지막에 나머지)
+                seatsPerBlock, seatsPerBlock + remainder, seatsPerBlock, // 중앙 3블록 (나머지를 중앙에)
+                seatsPerBlock, seatsPerBlock, seatsPerBlock // 우측 3블록 (좌측과 대칭)
               ]
 
               const renderSeatBlock = (start: number, length: number) => {
