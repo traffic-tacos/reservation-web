@@ -196,14 +196,15 @@ function Reserve() {
   }, [])
 
   // 층별 좌석 배치 생성 (6층, 돔 형태 곡선 + 가로 통로 2줄)
+  // 총 10,000석 목표: 각 층별 좌석 수 계산됨
   const generateFloorSeats = (floor: '1F' | '2F' | '3F' | '4F' | '5F' | '6F') => {
     const floorConfig = {
-      '1F': { name: 'VIP석', color: 'purple', rows: 10, baseSeats: 45, prefix: 'VIP', aisleRows: [3, 4, 7, 8] },
-      '2F': { name: 'R석', color: 'blue', rows: 12, baseSeats: 45, prefix: 'R', aisleRows: [4, 5, 8, 9] },
-      '3F': { name: 'S석', color: 'green', rows: 15, baseSeats: 45, prefix: 'S', aisleRows: [5, 6, 10, 11] },
-      '4F': { name: 'A석', color: 'orange', rows: 18, baseSeats: 45, prefix: 'A', aisleRows: [6, 7, 12, 13] },
-      '5F': { name: 'B석', color: 'red', rows: 20, baseSeats: 45, prefix: 'B', aisleRows: [7, 8, 13, 14] },
-      '6F': { name: 'C석', color: 'gray', rows: 25, baseSeats: 45, prefix: 'C', aisleRows: [8, 9, 17, 18] },
+      '1F': { name: 'VIP석', color: 'purple', rows: 20, baseSeats: 90, prefix: 'VIP', aisleRows: [6, 7, 14, 15] },
+      '2F': { name: 'R석', color: 'blue', rows: 22, baseSeats: 100, prefix: 'R', aisleRows: [7, 8, 15, 16] },
+      '3F': { name: 'S석', color: 'green', rows: 25, baseSeats: 110, prefix: 'S', aisleRows: [8, 9, 17, 18] },
+      '4F': { name: 'A석', color: 'orange', rows: 28, baseSeats: 120, prefix: 'A', aisleRows: [9, 10, 19, 20] },
+      '5F': { name: 'B석', color: 'red', rows: 30, baseSeats: 130, prefix: 'B', aisleRows: [10, 11, 20, 21] },
+      '6F': { name: 'C석', color: 'gray', rows: 35, baseSeats: 140, prefix: 'C', aisleRows: [11, 12, 23, 24] },
     }
 
     const config = floorConfig[floor]
