@@ -28,9 +28,18 @@ function Queue() {
   const enterMutation = useMutation({
     mutationFn: () => queueApi.enter({ waiting_token: waitingToken }),
     onSuccess: (data) => {
-      console.log('✅ [LOAD TEST] Enter success, navigating to reserve')
-      // 예약 토큰 저장
-      localStorage.setItem('reservation_token', data.reservation_token)
+      console.log('✅ [ENTER] Enter success, saving reservation token')
+      
+      // 🔑 SessionStorage에 토큰과 만료 시간 저장
+      sessionStorage.setItem('reservation_token', data.reservation_token)
+      sessionStorage.setItem(
+        'reservation_expires_at', 
+        String(Date.now() + (data.ttl_sec * 1000))
+      )
+      
+      console.log('✅ [ENTER] Token saved with TTL:', data.ttl_sec, 'seconds')
+      console.log('✅ [ENTER] Expires at:', new Date(Date.now() + data.ttl_sec * 1000).toISOString())
+      
       // replace: true로 히스토리 교체 (뒤로가기 시 Landing으로 이동)
       navigate('/reserve', { replace: true })
     },

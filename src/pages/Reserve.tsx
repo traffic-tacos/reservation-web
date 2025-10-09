@@ -10,9 +10,41 @@ function Reserve() {
   const [quantity, setQuantity] = useState(1)
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [holdTimeLeft, setHoldTimeLeft] = useState(180) // 3분 = 180초
-  const [reservationToken] = useState(() => localStorage.getItem('reservation_token') || '')
   const [selectedFloor, setSelectedFloor] = useState<'1F' | '2F' | '3F' | '4F' | '5F' | '6F' | '7F' | '8F' | '9F'>('1F')
   const [zoomLevel, setZoomLevel] = useState(1) // 확대/축소 레벨
+
+  // 🔑 SessionStorage에서 reservation_token 및 만료 시간 검증
+  const [reservationToken] = useState(() => {
+    const savedToken = sessionStorage.getItem('reservation_token')
+    const expiresAtStr = sessionStorage.getItem('reservation_expires_at')
+
+    if (!savedToken || !expiresAtStr) {
+      console.warn('⚠️ [RESERVE] No reservation token found in sessionStorage')
+      return ''
+    }
+
+    const expiresAt = parseInt(expiresAtStr)
+    const now = Date.now()
+
+    if (now >= expiresAt) {
+      // ❌ 만료됨 - 처음부터 다시 시작
+      console.log('⚠️ [RESERVE] Reservation token expired, redirecting to home')
+      console.log('⏰ [RESERVE] Expired at:', new Date(expiresAt).toISOString())
+      console.log('⏰ [RESERVE] Current time:', new Date(now).toISOString())
+      
+      sessionStorage.clear()
+      alert('예약 토큰이 만료되었습니다. 처음부터 다시 시작해주세요.')
+      navigate('/')
+      return ''
+    }
+
+    // ✅ 아직 유효함! 그대로 사용
+    const remainingSeconds = Math.floor((expiresAt - now) / 1000)
+    console.log('✅ [RESERVE] Reservation token still valid:', savedToken)
+    console.log('✅ [RESERVE] Remaining time:', remainingSeconds, 'seconds')
+    
+    return savedToken
+  })
 
   // 3분 카운트다운 타이머
   useEffect(() => {
@@ -85,6 +117,10 @@ function Reserve() {
     const authToken = localStorage.getItem('auth_token')
     if (!authToken) {
       console.warn('⚠️ [RESERVATION] No JWT token found - redirecting to login')
+      
+      // 로그인 후 돌아올 경로 저장 (예약 페이지)
+      localStorage.setItem('redirect_after_login', '/reserve')
+      
       alert('로그인이 필요한 서비스입니다.')
       navigate('/login')
       return
@@ -120,7 +156,11 @@ function Reserve() {
     if (!reservationToken) return
 
     const handleBeforeUnload = () => {
-      console.log('🚪 [RESERVE] Browser closing/refreshing - reservation token will expire')
+      console.log('🚪 [RESERVE] Browser closing/refreshing - clearing sessionStorage')
+      
+      // SessionStorage는 브라우저 닫으면 자동으로 삭제되지만 명시적으로 정리
+      sessionStorage.removeItem('reservation_token')
+      sessionStorage.removeItem('reservation_expires_at')
       
       // TODO: 백엔드에 예약 취소 API 추가 시 구현
       // const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://api.traffictacos.store'
