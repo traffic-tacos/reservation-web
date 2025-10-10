@@ -97,6 +97,17 @@ function Login() {
             </div>
           )}
 
+          {/* 테스트 계정 안내 */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm font-semibold text-blue-900 mb-2">
+              💡 테스트 계정
+            </p>
+            <div className="text-xs text-blue-800 space-y-1">
+              <p>• 사용자명: <code className="bg-blue-100 px-2 py-0.5 rounded">user01</code> ~ <code className="bg-blue-100 px-2 py-0.5 rounded">user10</code></p>
+              <p>• 비밀번호: <code className="bg-blue-100 px-2 py-0.5 rounded">pwd01</code> ~ <code className="bg-blue-100 px-2 py-0.5 rounded">pwd10</code></p>
+            </div>
+          </div>
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
