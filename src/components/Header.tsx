@@ -42,8 +42,16 @@ function Header() {
   }
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
+    <>
+      {/* PoC 환경 공지 배너 */}
+      <div className="bg-yellow-50 border-b border-yellow-200 py-2 px-4 text-center">
+        <p className="text-xs text-yellow-800">
+          ⚠️ <strong>PoC 환경</strong>: 현재 최소 스펙으로 운영 중이며, 일부 기능에서 지연이나 장애가 발생할 수 있습니다.
+        </p>
+      </div>
+      
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <motion.div
@@ -93,6 +101,7 @@ function Header() {
         </div>
       </div>
     </header>
+    </>
   )
 }
 

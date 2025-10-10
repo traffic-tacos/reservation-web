@@ -90,6 +90,34 @@ function Landing() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* PoC 환경 상세 공지 */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6 shadow-sm"
+      >
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">⚠️</span>
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-yellow-900 mb-2">
+              PoC (Proof of Concept) 환경 안내
+            </h3>
+            <div className="text-sm text-yellow-800 space-y-1">
+              <p>• 현재 시스템은 <strong>최소 스펙</strong>으로 운영되고 있습니다.</p>
+              <p>• 예약, 결제 처리 등에서 <strong>지연이나 일시적인 장애</strong>가 발생할 수 있습니다.</p>
+              <p>• 본 서비스는 <strong>데모 목적</strong>으로 제공되며, 실제 결제는 이루어지지 않습니다.</p>
+              <p className="mt-2 text-xs text-yellow-700">
+                💡 정상 작동하지 않는 경우, 잠시 후 다시 시도해주세요.
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* 히어로 섹션 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
