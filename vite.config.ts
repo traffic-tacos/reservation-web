@@ -38,11 +38,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // 프로덕션에서 mock 파일들을 별도 청크로 분리하여 제외
-          if (process.env.NODE_ENV === 'production' &&
-              (id.includes('mockData') || id.includes('reservationMock'))) {
-            return undefined // 번들에서 제외
-          }
+          // 테스트 용 정적 웹페이지를 위해 프로덕션에서도 mock 파일 포함
+          // if (process.env.NODE_ENV === 'production' &&
+          //     (id.includes('mockData') || id.includes('reservationMock'))) {
+          //   return undefined // 번들에서 제외
+          // }
 
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) {

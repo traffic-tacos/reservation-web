@@ -70,7 +70,7 @@ export async function loadConfig(): Promise<AppConfig> {
     if (import.meta.env.PROD) {
       configCache = {
         API_BASE: 'https://api.traffictacos.store',
-        API_MODE: 'production',
+        API_MODE: 'mock',
         ENV: 'production',
         FEATURES: {
           REQUIRE_LOGIN_TO_RESERVE: true,

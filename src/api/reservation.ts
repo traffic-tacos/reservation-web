@@ -36,11 +36,6 @@ function getReservationApiImplementation() {
 
   switch (mode) {
     case 'mock':
-      // 프로덕션 빌드에서는 mock을 완전히 제외
-      if (import.meta.env.PROD) {
-        console.warn('Mock API not available in production, using real API')
-        return Promise.resolve(realReservationApi)
-      }
       return import('./reservationMock').then(module => module.mockReservationApi)
     case 'local':
     case 'production':
