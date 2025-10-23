@@ -2,12 +2,7 @@ name: Deploy Test to S3 & CloudFront
 
 on:
   push:
-    branches: [ "test" ]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'vite.config.ts'
+    branches: [ "test" ] 
   workflow_dispatch:
     inputs:
       force_deploy:
