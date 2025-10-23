@@ -1,0 +1,134 @@
+name: Deploy Test to S3 & CloudFront
+
+on:
+  push:
+    branches: [ "test" ]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'vite.config.ts'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment (skip cache)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: ap-northeast-2
+  S3_BUCKET: traffictacos.store-static-website
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_TEST_DISTRIBUTION_ID }}
+  NODE_VERSION: '18'
+
+jobs:
+  deploy:
+    name: Build & Deploy Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint:ci
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Build for test
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_BUILD_ENV: test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check S3 bucket exists
+        run: |
+          echo "🔍 Checking if S3 bucket exists: ${{ env.S3_BUCKET }}"
+          if aws s3 ls "s3://${{ env.S3_BUCKET }}/" 2>&1 | grep -q 'NoSuchBucket'; then
+            echo "❌ S3 bucket does not exist. Please run Terraform first."
+            exit 1
+          else
+            echo "✅ S3 bucket exists"
+          fi
+
+      - name: Deploy to S3
+        run: |
+          echo "🚀 Deploying to S3 bucket: ${{ env.S3_BUCKET }}"
+
+          # Set appropriate cache headers for test environment (shorter cache)
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "max-age=300" \
+            --exclude "*.html" \
+            --exclude "sw.js" \
+            --exclude "manifest.json"
+
+          # HTML files with no cache for test environment
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ \
+            --cache-control "max-age=0" \
+            --include "*.html" \
+            --include "sw.js" \
+            --include "manifest.json"
+
+          echo "✅ S3 deployment completed"
+
+      - name: Create CloudFront invalidation
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          echo "🔄 Creating CloudFront invalidation..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+
+          echo "✅ CloudFront invalidation created: $INVALIDATION_ID"
+          echo "🌐 Test Distribution URL: https://www.traffictacos.store"
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🧪 Test Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Test" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bundle Size**: $(du -sh dist/ | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **File Count**: $(find dist/ -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Test Links" >> $GITHUB_STEP_SUMMARY
+          echo "- **CloudFront URL**: https://www.traffictacos.store" >> $GITHUB_STEP_SUMMARY
+          echo "- **S3 Bucket**: s3://${{ env.S3_BUCKET }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "🎉 Test deployment successful!"
+          else
+            echo "❌ Test deployment failed!"
+            exit 1
+          fi
