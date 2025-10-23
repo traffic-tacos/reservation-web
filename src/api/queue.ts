@@ -48,9 +48,12 @@ export const queueApi = {
         throw new Error(mockErrors.RATE_LIMITED.message)
       }
 
+      // 대기열 순번: 150~250 사이로 시작
+      const initialPosition = Math.floor(Math.random() * 101) + 150; // 150~250
+
       return {
-        waiting_token: `wtkn_${Date.now()}`,
-        position_hint: Math.floor(Math.random() * 10000) + 1,
+        waiting_token: `wtkn_${Date.now()}_${initialPosition}`, // 순번 포함해서 고유하게
+        position_hint: initialPosition,
       }
     }
 
@@ -82,29 +85,38 @@ export const queueApi = {
       const { mockApiDelay } = await import('@/data/mockData')
       await mockApiDelay(500) // 짧은 딜레이로 폴링 시뮬레이션
 
-      // 토큰별로 상태를 추적하기 위한 간단한 캐시
-      const tokenKey = `queue_status_${token}`
-      let callCount = parseInt(localStorage.getItem(`${tokenKey}_calls`) || '0')
+      // 토큰에서 초기 순번 추출 (토큰 형식: wtkn_timestamp_initialPosition)
+      const tokenParts = token.split('_')
+      const initialPosition = parseInt(tokenParts[tokenParts.length - 1]) || 150
 
-      callCount++
-      localStorage.setItem(`${tokenKey}_calls`, callCount.toString())
+      // 토큰별로 현재 순번을 추적하기 위한 캐시
+      const positionKey = `queue_position_${token}`
+      let currentPosition = parseInt(localStorage.getItem(positionKey) || initialPosition.toString())
 
-      // 3번 호출마다 ready 상태로 변경 (약 6초 후)
-      const shouldBecomeReady = callCount >= 3
+      // 각 호출마다 랜덤하게 1-3만큼 순번 감소 (더 현실적인 대기열)
+      const decreaseAmount = Math.floor(Math.random() * 3) + 1
+      currentPosition = Math.max(1, currentPosition - decreaseAmount)
 
-      if (shouldBecomeReady) {
-        localStorage.setItem(tokenKey, 'ready')
+      // 현재 순번 저장
+      localStorage.setItem(positionKey, currentPosition.toString())
+
+      // 순번이 1이 되면 ready 상태로 변경
+      if (currentPosition <= 1) {
         return {
           status: 'ready',
+          position: 1,
           eta_sec: undefined,
-          callCount: callCount,
         }
       }
 
+      // ETA 계산: 남은 순번 * 랜덤 시간(3-8초)
+      const etaPerPosition = Math.floor(Math.random() * 6) + 3 // 3-8초
+      const etaSec = currentPosition * etaPerPosition
+
       return {
         status: 'waiting',
-        eta_sec: Math.max(2, 60 - (callCount * 15)), // 빠르게 ETA 감소
-        callCount: callCount, // 호출 횟수도 함께 반환
+        position: currentPosition,
+        eta_sec: etaSec,
       }
     }
 
