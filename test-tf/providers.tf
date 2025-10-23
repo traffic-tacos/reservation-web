@@ -9,13 +9,13 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-northeast-2"
+  region  = "ap-northeast-2"
   profile = "tacos"
 }
 
 # Additional provider for us-east-1 (required for CloudFront ACM certificates)
 provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
+  alias   = "us_east_1"
+  region  = "us-east-1"
   profile = "tacos"
 }
