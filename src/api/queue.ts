@@ -109,9 +109,9 @@ export const queueApi = {
         }
       }
 
-      // ETA 계산: 남은 순번 * 랜덤 시간(3-8초)
-      const etaPerPosition = Math.floor(Math.random() * 6) + 3 // 3-8초
-      const etaSec = currentPosition * etaPerPosition
+      // ETA 계산: 1분에서 시작해서 순번에 비례해서 줄어들음
+      // 250위: 60초, 200위: 48초, 150위: 36초, ... 1위: 1초
+      const etaSec = Math.max(1, Math.floor((currentPosition / 250) * 60));
 
       return {
         status: 'waiting',

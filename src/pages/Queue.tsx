@@ -4,25 +4,103 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Clock, Users, CheckCircle } from 'lucide-react'
 import { queueApi } from '@/api/queue'
+import { getApiMode } from '@/utils/config'
 // import { usePolling } from '@/hooks/usePolling'
 
 function Queue() {
   const navigate = useNavigate()
   const [waitingToken] = useState(() => localStorage.getItem('waiting_token') || '')
   const [isEntering, setIsEntering] = useState(false) // 중복 입장 방지
+  const [totalWaiters, setTotalWaiters] = useState(() =>
+    Math.floor(Math.random() * 51) + 250 // 초기값: 250~300
+  )
 
-  // 대기열 상태 조회 쿼리
-  const { data: queueStatus, error: statusError } = useQuery({
+  // API 모드 확인
+  const apiMode = getApiMode()
+  const isMockMode = apiMode === 'mock' || true // 임시: 강제 Mock 모드
+
+  // 디버깅: 초기 상태 확인
+  console.log('🎫 Waiting token:', waitingToken)
+  console.log('🔧 API Mode:', apiMode, 'Mock:', isMockMode)
+  console.log('🌍 Is Production:', import.meta.env.PROD)
+  console.log('📄 Config loaded from:', getApiMode() === 'mock' ? 'Mock mode detected' : 'Not mock mode')
+
+  // Mock 모드용 로컬 상태 관리
+  const [mockQueueStatus, setMockQueueStatus] = useState<{
+    status: 'waiting' | 'ready'
+    position: number
+    eta_sec?: number
+    ready_for_entry?: boolean
+    waiting_time?: number
+  } | null>(() => {
+    if (isMockMode && waitingToken) {
+      // 초기 순번 설정 (빠른 테스트를 위해 낮게: 5~15)
+      const initialPosition = Math.floor(Math.random() * 11) + 5
+      return {
+        status: 'waiting',
+        position: initialPosition,
+        eta_sec: Math.max(3, Math.floor(initialPosition * 0.8)), // 빠른 테스트용 ETA
+        ready_for_entry: false,
+        waiting_time: 0
+      }
+    }
+    return null
+  })
+
+  // Mock 모드: 로컬에서 대기열 상태 관리
+  useEffect(() => {
+    if (!isMockMode || !waitingToken) return
+
+    const interval = setInterval(() => {
+      setMockQueueStatus(prev => {
+        if (!prev || prev.status === 'ready') return prev
+
+        const decreaseAmount = Math.floor(Math.random() * 4) + 3 // 3-6씩 감소 (더 빠름)
+        const newPosition = Math.max(1, prev.position - decreaseAmount)
+
+        if (newPosition <= 1) {
+          return {
+            status: 'ready' as const,
+            position: 1,
+            eta_sec: undefined,
+            ready_for_entry: true,
+            waiting_time: prev.waiting_time || 0
+          }
+        }
+
+        const etaSec = Math.max(1, Math.floor(newPosition * 0.5)) // 빠른 테스트용 ETA
+
+        return {
+          status: 'waiting' as const,
+          position: newPosition,
+          eta_sec: etaSec,
+          ready_for_entry: false,
+          waiting_time: (prev.waiting_time || 0) + 2 // 2초마다 증가
+        }
+      })
+    }, 2000) // 2초마다 업데이트
+
+    return () => clearInterval(interval)
+  }, [isMockMode, waitingToken])
+
+  // 실제 API 모드용 쿼리
+  const { data: realQueueStatus, error: statusError } = useQuery({
     queryKey: ['queue-status', waitingToken],
-    queryFn: () => queueApi.getStatus(waitingToken),
-    enabled: !!waitingToken,
+    queryFn: () => {
+      console.log('🚨 REAL API CALLED - This should not happen in mock mode!')
+      console.log('Token:', waitingToken, 'Mock mode:', isMockMode, 'API mode:', apiMode)
+      return queueApi.getStatus(waitingToken)
+    },
+    enabled: !!waitingToken && !isMockMode, // Mock 모드가 아닐 때만 실행
     refetchInterval: 2000, // 2초마다 자동 갱신
     retry: 3, // 실패 시 3번 재시도
     retryDelay: 1000, // 1초 간격으로 재시도
-    // 부하 테스트용: 에러 발생해도 계속 폴링
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   })
+
+  // 현재 사용할 queueStatus 결정
+  const queueStatus = isMockMode ? mockQueueStatus : realQueueStatus
 
   // 입장 뮤테이션
   const enterMutation = useMutation({
@@ -57,10 +135,23 @@ function Queue() {
     console.warn('⚠️ [LOAD TEST] Queue status error (page continues):', statusError)
   }
 
+  // 전체 대기자 수를 2초마다 랜덤으로 업데이트 (250~300명)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTotalWaiters(Math.floor(Math.random() * 51) + 250)
+    }, 2000) // 2초마다 업데이트
+
+    return () => clearInterval(interval)
+  }, [])
+
   const status = queueStatus?.status || 'waiting'
   // 백엔드에서 받은 실제 position 값 사용 (PoC: 실제 대기열 데이터 반영)
   const position = queueStatus?.position ?? 0
-  const etaSeconds = queueStatus?.eta_sec || 120
+  const etaSeconds = queueStatus?.eta_sec || 60
+
+  // 디버깅: queueStatus 확인
+  console.log('🔍 Queue status:', queueStatus)
+  console.log('📊 Position:', position, 'ETA:', etaSeconds)
 
   const handleEnter = () => {
     if (!waitingToken) {
@@ -215,7 +306,7 @@ function Queue() {
                 />
               </div>
               <div className="text-xs text-gray-500 mt-2">
-                전체 대기자: 약 20,000명
+                전체 대기자: 약 {totalWaiters.toLocaleString()}명
               </div>
             </div>
 
