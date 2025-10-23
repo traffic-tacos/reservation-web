@@ -19,11 +19,11 @@ function Queue() {
   const apiMode = getApiMode()
   const isMockMode = apiMode === 'mock' || true // 임시: 강제 Mock 모드
 
-  // 디버깅: 초기 상태 확인
-  console.log('🎫 Waiting token:', waitingToken)
-  console.log('🔧 API Mode:', apiMode, 'Mock:', isMockMode)
-  console.log('🌍 Is Production:', import.meta.env.PROD)
-  console.log('📄 Config loaded from:', getApiMode() === 'mock' ? 'Mock mode detected' : 'Not mock mode')
+  // // 디버깅: 초기 상태 확인
+  // console.log('🎫 Waiting token:', waitingToken)
+  // console.log('🔧 API Mode:', apiMode, 'Mock:', isMockMode)
+  // console.log('🌍 Is Production:', import.meta.env.PROD)
+  // console.log('📄 Config loaded from:', getApiMode() === 'mock' ? 'Mock mode detected' : 'Not mock mode')
 
   // Mock 모드용 로컬 상태 관리
   const [mockQueueStatus, setMockQueueStatus] = useState<{
@@ -149,9 +149,9 @@ function Queue() {
   const position = queueStatus?.position ?? 0
   const etaSeconds = queueStatus?.eta_sec || 60
 
-  // 디버깅: queueStatus 확인
-  console.log('🔍 Queue status:', queueStatus)
-  console.log('📊 Position:', position, 'ETA:', etaSeconds)
+  // // 디버깅: queueStatus 확인
+  // console.log('🔍 Queue status:', queueStatus)
+  // console.log('📊 Position:', position, 'ETA:', etaSeconds)
 
   const handleEnter = () => {
     if (!waitingToken) {
